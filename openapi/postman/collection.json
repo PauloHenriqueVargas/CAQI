@@ -1,0 +1,568 @@
+{
+  "info": {
+    "name": "CAQ/CAQi — API Collection",
+    "_postman_id": "caq-collection-001",
+    "description": "Coleção Postman para testes rápidos do Sistema CAQ/CAQi — alinhada ao esqueleto OpenAPI 3.1 entregue.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://sandbox.seu-municipio.gov.br/caq"
+    },
+    {
+      "key": "token",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "CAQi — Parâmetros",
+      "item": [
+        {
+          "name": "GET /caqi/parametros",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/caqi/parametros",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "caqi",
+                "parametros"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 OK', ()=>pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PUT /caqi/parametros",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"etapaId\": \"EF1\",\n  \"tempo\": \"parcial\",\n  \"alunosPorTurma\": 25,\n  \"cargaHorariaDocenteHSem\": 20,\n  \"jornadaDiasAno\": 200,\n  \"coefRural\": 1.0\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/caqi/parametros",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "caqi",
+                "parametros"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "CAQi — Insumos/Calculo",
+      "item": [
+        {
+          "name": "GET /caqi/insumos",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/caqi/insumos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "caqi",
+                "insumos"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /caqi/insumos",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"MOB-001\",\n  \"nome\": \"Carteira escolar\",\n  \"categoria\": \"Mobiliário\",\n  \"tipo_aplicacao\": \"por_aluno\",\n  \"unidade\": \"un\",\n  \"etapa_aplicavel\": \"Todas\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/caqi/insumos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "caqi",
+                "insumos"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /caqi/calculos",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ano\": 2025,\n  \"escolas\": [\n    \"1\",\n    \"2\"\n  ],\n  \"etapas\": [\n    \"Creche\",\n    \"Pré-escola\",\n    \"EF1\"\n  ],\n  \"usarPrecosVigentes\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/caqi/calculos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "caqi",
+                "calculos"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Fundeb/MDE",
+      "item": [
+        {
+          "name": "GET /fundeb/execucao",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/fundeb/execucao?ano=2025&mes=5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "fundeb",
+                "execucao"
+              ],
+              "query": [
+                {
+                  "key": "ano",
+                  "value": "2025"
+                },
+                {
+                  "key": "mes",
+                  "value": "5"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /fundeb/validacoes",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/fundeb/validacoes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "fundeb",
+                "validacoes"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "SIOPE",
+      "item": [
+        {
+          "name": "GET /siope/export",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/siope/export",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "siope",
+                "export"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /siope/status",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/siope/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "siope",
+                "status"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Gestão Escolar",
+      "item": [
+        {
+          "name": "GET /escolas",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/escolas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "escolas"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /escolas",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Escola Municipal A\",\n  \"localizacao\": \"Urbana\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/escolas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "escolas"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /matriculas",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/matriculas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "matriculas"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /matriculas",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"escolaId\": \"1\",\n  \"alunoId\": \"123\",\n  \"etapaId\": \"EF1\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/matriculas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "matriculas"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Compras/Contratos",
+      "item": [
+        {
+          "name": "GET /compras/contratos",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/compras/contratos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "compras",
+                "contratos"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /compras/contratos",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fornecedorId\": \"789\",\n  \"objeto\": \"Aquisição de mobiliário escolar\",\n  \"valorGlobal\": 150000.0,\n  \"modalidade\": \"pregao\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/compras/contratos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "compras",
+                "contratos"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /compras/contratos/:id/medicoes",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"competencia\": \"202505\",\n  \"valor_medido\": 50000.0,\n  \"nota_fiscal\": \"12345\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/compras/contratos/:id/medicoes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "compras",
+                "contratos",
+                ":id",
+                "medicoes"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Transparência/LAI",
+      "item": [
+        {
+          "name": "GET /transparencia/publicacoes",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/transparencia/publicacoes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "transparencia",
+                "publicacoes"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /transparencia/publicacoes",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipo\": \"CAQ\",\n  \"conteudo_hash\": \"abc123\",\n  \"url_publica\": \"https://portal.gov.br/caq\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/transparencia/publicacoes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "transparencia",
+                "publicacoes"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auditoria",
+      "item": [
+        {
+          "name": "GET /auditoria/logs",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/auditoria/logs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auditoria",
+                "logs"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tributário (retenções)",
+      "item": [
+        {
+          "name": "POST /tributario/retencoes",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"valorBruto\": 100000.0,\n  \"cnpj\": \"00.000.000/0001-00\",\n  \"optanteSimples\": true,\n  \"municipioPrestacao\": \"Maragogi/AL\",\n  \"itens\": [\n    {\n      \"naturezaDespesa\": \"3.3.90.30\",\n      \"aliquotaISS\": 5,\n      \"aliquotaIRRF\": 1.5\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tributario/retencoes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tributario",
+                "retencoes"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Índices/Inflatores",
+      "item": [
+        {
+          "name": "GET /indices",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/indices",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "indices"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /indices",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"IPCA\",\n  \"competencia\": \"2025-05\",\n  \"valor\": 0.45\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/indices",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "indices"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "KPIs executivos",
+      "item": [
+        {
+          "name": "GET /kpis",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/kpis",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "kpis"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

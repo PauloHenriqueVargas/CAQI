@@ -1,0 +1,335 @@
+{
+  "info": {
+    "name": "CAQ/CAQi — API Collection (Tests)",
+    "_postman_id": "caq-collection-002",
+    "description": "Coleção Postman com testes automáticos (200/401/403/422) e exemplos de payload — alinhada ao OpenAPI.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://sandbox.seu-municipio.gov.br/caq"
+    },
+    {
+      "key": "token",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Healthcheck",
+      "item": [
+        {
+          "name": "GET /kpis (auth)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/kpis",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "kpis"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('JSON válido', function () { pm.response.to.be.json; });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEG — GET /kpis sem token (401)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/kpis",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "kpis"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401 ou 403', function () { pm.expect([401,403]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CAQi",
+      "item": [
+        {
+          "name": "POST /caqi/calculos — payload válido (200)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"ano\": 2025, \"escolas\": [\"1\", \"2\"], \"etapas\": [\"Creche\", \"Pré‑escola\", \"EF Anos Iniciais\"], \"usarPrecosVigentes\": true}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/caqi/calculos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "caqi",
+                "calculos"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Possui campo itens', function () { var json = pm.response.json(); pm.expect(json).to.have.property('itens'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEG — POST /caqi/calculos sem ano (422)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"escolas\": [\"1\"]}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/caqi/calculos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "caqi",
+                "calculos"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400 ou 422', function () { pm.expect([400,422]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Fundeb/MDE",
+      "item": [
+        {
+          "name": "GET /fundeb/execucao?ano=2025&mes=5 (200)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/fundeb/execucao?ano=2025&mes=5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "fundeb",
+                "execucao"
+              ],
+              "query": [
+                {
+                  "key": "ano",
+                  "value": "2025"
+                },
+                {
+                  "key": "mes",
+                  "value": "5"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('Tem %70 e %15', function(){var j=pm.response.json(); pm.expect(j).to.have.property('perc70Pessoal'); pm.expect(j).to.have.property('perc15VAATCapital');});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /fundeb/validacoes (200)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/fundeb/validacoes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "fundeb",
+                "validacoes"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', function(){pm.response.to.have.status(200);});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Tributário",
+      "item": [
+        {
+          "name": "POST /tributario/retencoes — Simples Nacional (200)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"valorBruto\": 100000.0, \"cnpj\": \"00.000.000/0001-00\", \"optanteSimples\": true, \"municipioPrestacao\": \"Maragogi/AL\", \"itens\": [{\"naturezaDespesa\": \"3.3.90.39\", \"aliquotaISS\": 5, \"aliquotaIRRF\": 0}]}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tributario/retencoes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tributario",
+                "retencoes"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('Tem campos de tributos', function(){var j=pm.response.json(); ['irrf','iss','pis','cofins','csll','das','valorLiquido'].forEach(k=>pm.expect(j).to.have.property(k));});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEG — POST /tributario/retencoes sem itens (422)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"valorBruto\": 1000}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tributario/retencoes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tributario",
+                "retencoes"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400 ou 422', function(){pm.expect([400,422]).to.include(pm.response.code);});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

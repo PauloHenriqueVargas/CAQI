@@ -1,0 +1,401 @@
+openapi: 3.1.0
+info:
+  title: API — Sistema CAQ/CAQi (Educação)
+  version: 0.1.0
+  description: 'Esqueleto OpenAPI 3.1 para o Sistema CAQ/CAQi. Compliance com CF/88,
+    LDB, PNE, Lei 14.113/2020 (Fundeb), LRF/LAI, Decreto 10.540/2020 (SIAFIC), Lei
+    14.133/2021 e LGPD. Fonte conceitual: anexo CAQ.pdf.'
+servers:
+- url: https://api.seu-municipio.gov.br/caq
+  description: Produção
+- url: https://sandbox.seu-municipio.gov.br/caq
+  description: Homologação
+security:
+- oauth2:
+  - read
+  - write
+- bearerAuth: []
+tags:
+- name: auth
+- name: caqi
+- name: fundeb
+- name: siope
+- name: escolar
+- name: compras
+- name: transparencia
+- name: auditoria
+- name: tributario
+- name: indices
+paths:
+  /auth/oauth2/callback:
+    get:
+      tags:
+      - auth
+      summary: Callback OAuth2 (Gov.br)
+      responses:
+        '200':
+          description: Login efetuado
+  /caqi/parametros:
+    get:
+      tags:
+      - caqi
+      summary: Listar parâmetros por etapa/modalidade
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParametroEtapa'
+    put:
+      tags:
+      - caqi
+      summary: Atualizar parâmetros por etapa/modalidade
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParametroEtapa'
+      responses:
+        '200':
+          description: Atualizado
+  /caqi/insumos:
+    get:
+      tags:
+      - caqi
+      summary: Listar insumos
+      responses:
+        '200':
+          description: OK
+    post:
+      tags:
+      - caqi
+      summary: Cadastrar insumo
+      responses:
+        '201':
+          description: Criado
+  /caqi/calculos:
+    post:
+      tags:
+      - caqi
+      summary: Executar cálculo CAQi/CAQ por etapa/escola
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequisicaoCalculo'
+      responses:
+        '200':
+          description: Resultado do cálculo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultadoCalculo'
+    get:
+      tags:
+      - caqi
+      summary: Listar cálculos executados
+      responses:
+        '200':
+          description: OK
+  /fundeb/execucao:
+    get:
+      tags:
+      - fundeb
+      summary: Consultar execução do Fundeb (70% e 15% VAAT)
+      parameters:
+      - name: ano
+        in: query
+        schema:
+          type: integer
+      - name: mes
+        in: query
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecucaoFundeb'
+  /fundeb/validacoes:
+    get:
+      tags:
+      - fundeb
+      summary: Validar 70%/15%/VAAR
+      responses:
+        '200':
+          description: OK
+  /siope/export:
+    get:
+      tags:
+      - siope
+      summary: Exportar arquivo SIOPE‑ready
+      responses:
+        '200':
+          description: Arquivo gerado
+  /siope/status:
+    get:
+      tags:
+      - siope
+      summary: Status/pendências SIOPE
+      responses:
+        '200':
+          description: OK
+  /escolas:
+    get:
+      tags:
+      - escolar
+      summary: Listar escolas
+      responses:
+        '200':
+          description: OK
+    post:
+      tags:
+      - escolar
+      summary: Criar escola
+      responses:
+        '201':
+          description: Criado
+  /matriculas:
+    get:
+      tags:
+      - escolar
+      summary: Listar matrículas
+      responses:
+        '200':
+          description: OK
+    post:
+      tags:
+      - escolar
+      summary: Cadastrar matrícula
+      responses:
+        '201':
+          description: Criado
+  /compras/contratos:
+    get:
+      tags:
+      - compras
+      summary: Listar contratos
+      responses:
+        '200':
+          description: OK
+    post:
+      tags:
+      - compras
+      summary: Criar contrato
+      responses:
+        '201':
+          description: Criado
+  /compras/contratos/{id}/medicoes:
+    post:
+      tags:
+      - compras
+      summary: Registrar medição do contrato
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '201':
+          description: Registrado
+  /transparencia/publicacoes:
+    get:
+      tags:
+      - transparencia
+      summary: Listar publicações do portal
+      responses:
+        '200':
+          description: OK
+    post:
+      tags:
+      - transparencia
+      summary: Publicar dado/relatório
+      responses:
+        '201':
+          description: Publicado
+  /auditoria/logs:
+    get:
+      tags:
+      - auditoria
+      summary: Listar logs imutáveis
+      responses:
+        '200':
+          description: OK
+  /tributario/retencoes:
+    post:
+      tags:
+      - tributario
+      summary: Calcular retenções em uma despesa/nota fiscal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReqRetencao'
+      responses:
+        '200':
+          description: Cálculo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespRetencao'
+  /indices:
+    get:
+      tags:
+      - indices
+      summary: Listar índices (IPCA/SINAPI)
+      responses:
+        '200':
+          description: OK
+    post:
+      tags:
+      - indices
+      summary: Cadastrar índice
+      responses:
+        '201':
+          description: Criado
+  /kpis:
+    get:
+      summary: KPIs executivos (gap, cobertura de insumos, conformidade Fundeb, SIOPE
+        no prazo, transparência)
+      responses:
+        '200':
+          description: OK
+components:
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://sso.gov.br/oauth/authorize
+          tokenUrl: https://sso.gov.br/oauth/token
+          scopes:
+            read: Leitura
+            write: Escrita
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ParametroEtapa:
+      type: object
+      properties:
+        etapaId:
+          type: string
+        tempo:
+          type: string
+          enum:
+          - parcial
+          - integral
+          - noturno
+        alunosPorTurma:
+          type: number
+        cargaHorariaDocenteHSem:
+          type: number
+        jornadaDiasAno:
+          type: number
+        coefRural:
+          type: number
+      required:
+      - etapaId
+    RequisicaoCalculo:
+      type: object
+      properties:
+        ano:
+          type: integer
+        escolas:
+          type: array
+          items:
+            type: string
+        etapas:
+          type: array
+          items:
+            type: string
+        usarPrecosVigentes:
+          type: boolean
+      required:
+      - ano
+    ResultadoCalculo:
+      type: object
+      properties:
+        ano:
+          type: integer
+        itens:
+          type: array
+          items:
+            type: object
+            properties:
+              escolaId:
+                type: string
+              etapaId:
+                type: string
+              caqiAlunoAno:
+                type: number
+              caqAlunoAno:
+                type: number
+              gapAlunoAno:
+                type: number
+    ExecucaoFundeb:
+      type: object
+      properties:
+        ano:
+          type: integer
+        mes:
+          type: integer
+        perc70Pessoal:
+          type: number
+        perc15VAATCapital:
+          type: number
+        vaarCumprido:
+          type: boolean
+        observacoes:
+          type: string
+    ReqRetencao:
+      type: object
+      properties:
+        valorBruto:
+          type: number
+        cnpj:
+          type: string
+        optanteSimples:
+          type: boolean
+        municipioPrestacao:
+          type: string
+        itens:
+          type: array
+          items:
+            type: object
+            properties:
+              naturezaDespesa:
+                type: string
+              aliquotaISS:
+                type: number
+              aliquotaIRRF:
+                type: number
+      required:
+      - valorBruto
+    RespRetencao:
+      type: object
+      properties:
+        irrf:
+          type: number
+        inss:
+          type: number
+        iss:
+          type: number
+        pis:
+          type: number
+        cofins:
+          type: number
+        csll:
+          type: number
+        das:
+          type: number
+        valorLiquido:
+          type: number

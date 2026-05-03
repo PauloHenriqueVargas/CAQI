@@ -1,0 +1,50 @@
+# Default behavior: normalize line endings on commit
+* text=auto eol=lf
+
+# Explicitly text
+*.md         text eol=lf
+*.py         text eol=lf
+*.ts         text eol=lf
+*.tsx        text eol=lf
+*.js         text eol=lf
+*.jsx        text eol=lf
+*.json       text eol=lf
+*.yaml       text eol=lf
+*.yml        text eol=lf
+*.sql        text eol=lf
+*.toml       text eol=lf
+*.cfg        text eol=lf
+*.ini        text eol=lf
+*.sh         text eol=lf
+*.html       text eol=lf
+*.css        text eol=lf
+.gitignore   text eol=lf
+.gitattributes text eol=lf
+.editorconfig text eol=lf
+Dockerfile   text eol=lf
+
+# Binary — must not be touched
+*.pdf        binary
+*.docx       binary
+*.xlsx       binary
+*.pptx       binary
+*.png        binary
+*.jpg        binary
+*.jpeg       binary
+*.gif        binary
+*.ico        binary
+*.zip        binary
+*.tar.gz     binary
+*.parquet    binary
+*.duckdb     binary
+*.sqlite     binary
+*.sqlite3    binary
+*.db         binary
+*.woff       binary
+*.woff2      binary
+*.ttf        binary
+*.eot        binary
+
+# GitHub Linguist hints
+docs/references/** linguist-vendored
+docs/legal/**      linguist-vendored
