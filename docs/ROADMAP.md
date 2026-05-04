@@ -120,12 +120,26 @@ Sprint 3.D (próxima — opcional antes de Fase 4):
 - [ ] Cross-svc smoke test E2E (script bash que sobe docker-compose, POST despesa violadora com flag on, espera 409)
 - [ ] Endpoint /api/v1/fundeb/validacoes (consolida notificações + prazos legais)
 
-## Fase 4 — Compras/Contratos + Tributário (Sprint 4–5) — `caq-financeiro-svc`
+## Fase 4 — Compras/Contratos + Tributário — `caq-financeiro-svc`
 
-- [ ] Lei 14.133: ETP, TR, matriz de risco, modalidades
-- [ ] Integração PNCP (publicação de contratos via API)
-- [ ] Motor de retenções: IRRF, INSS, ISS, PIS/Cofins/CSLL, DAS (Simples Nacional CGSN 140/2018)
-- [ ] Endpoint `/api/v1/tributario/retencoes`
+**Status: ⏳ Em andamento.**
+
+Sprint 4.A (concluída) — Motor de Retenções:
+- [x] **MotorRetencoes** (stateless): aplica regras simplificadas alinhadas a Lei 9.430/1996, IN RFB 1.234/2012, Lei 8.212/1991, LC 123/2006:
+  - Não-optante: IRRF 1,5% + (INSS 11% se serviço com cessão MO) + PIS 0,65% + COFINS 3,0% + CSLL 1,0% (se valor > R$ 215,05) + ISS conforme alíquota municipal
+  - Simples Nacional: SÓ ISS retido (regra geral)
+  - Lista de serviços com cessão MO: LIMPEZA_CONSERVACAO, ENGENHARIA, VIGILANCIA, TRANSPORTE_CARGAS, MANUTENCAO_PREDIAL, OBRAS_CIVIS
+- [x] DTOs RequisicaoRetencaoDto + ResultadoRetencaoDto + ItemRetencaoDto (memória item-a-item com base legal)
+- [x] Endpoint POST /api/v1/tributario/retencoes (GESTOR)
+- [x] SecurityConfig: + RBAC para /api/v1/tributario/**
+- [x] MotorRetencoesTest: 5 cenários (não-optante GERAL R$10k, com cessão MO, Simples só ISS, valor abaixo limite PCC, sem alíquota ISS)
+
+Sprint 4.B (próxima) — Compras/Contratos Lei 14.133:
+- [ ] JPA entities Fornecedor, Contrato, MedicaoContrato (sobre tabelas existentes em V0001)
+- [ ] CRUD básico /api/v1/financeiro/fornecedores e /contratos e /contratos/{id}/medicoes
+- [ ] Integração com retenções: medição contratual aciona MotorRetencoes para gerar guia de pagamento
+- [ ] (Defer 4.C) ETP, TR, matriz de risco — anexos JSONB
+- [ ] (Defer 4.C) Cliente HTTP para PNCP (publicação automática)
 
 ## Fase 5 — SIOPE Connector + Censo (Sprint 5–6) — `caq-compliance-svc`
 

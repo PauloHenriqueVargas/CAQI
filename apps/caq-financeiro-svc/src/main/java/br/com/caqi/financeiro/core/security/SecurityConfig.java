@@ -70,10 +70,12 @@ public class SecurityConfig {
                         // Operacional: GESTOR
                         .requestMatchers(HttpMethod.POST,   "/api/v1/financeiro/receitas/**").hasRole("GESTOR")
                         .requestMatchers(HttpMethod.POST,   "/api/v1/financeiro/despesas/**").hasRole("GESTOR")
+                        .requestMatchers(HttpMethod.POST,   "/api/v1/tributario/**").hasRole("GESTOR")
 
                         // Consulta: LEITOR
                         .requestMatchers(HttpMethod.GET,    "/api/v1/financeiro/**").hasRole("LEITOR")
                         .requestMatchers(HttpMethod.GET,    "/api/v1/fundeb/**").hasRole("LEITOR")
+                        .requestMatchers(HttpMethod.GET,    "/api/v1/tributario/**").hasRole("LEITOR")
 
                         .anyRequest().authenticated()
                 )
