@@ -95,16 +95,25 @@ Sprint 3.A (concluída) — `caq-financeiro-svc`:
 - [x] FundebServiceTest unitário (Mockito): cenário-base do seed, violação Fundeb 70%, divisão por zero
 - [x] application.yml: removido `default_schema: financeiro` (DDL ainda no public — split em Fase 2.II)
 
-Sprint 3.B (próxima) — `caq-compliance-svc`:
-- [ ] Listener RabbitMQ que consome `caqi.calculo.executado.*` e cria registros de auditoria
-- [ ] AvaliadorComplianceService: aplica regras (MDE 25%, Fundeb 70%, VAAT 15%, VAAR) e gera Notificação
-- [ ] Endpoint /api/v1/compliance/notificacoes
-- [ ] Bloqueio: interceptor que rejeita POST /api/v1/financeiro/despesas se o lançamento derruba % abaixo do mínimo (opcional, configurável)
-- [ ] Logs imutáveis com chain SHA-256 em log_auditoria
+Sprint 3.B (concluída) — `caq-compliance-svc`:
+- [x] V0005 (engine-svc/db/migration): tabela notificacao com payload JSONB + índices (status/ano, tipo, created_at)
+- [x] JPA entities Notificacao + LogAuditoria (sobre tabelas existentes)
+- [x] **AuditChainService**: chain SHA-256 (Merkle) sobre log_auditoria com lock pessimista (FOR UPDATE) no último log para serializar inserts concorrentes; verificarIntegridade() recalcula e devolve id do primeiro log quebrado (ou Optional.empty)
+- [x] **AvaliadorComplianceService**: chama caq-financeiro-svc via REST (FinanceiroClient com Basic Auth), aplica regras MDE 25% / Fundeb 70% / VAAT 15% e cria Notificação (severidade `critica` para CF/Fundeb, `alta` para VAAT) + chain log a cada notificação
+- [x] **RabbitMQ listener**: queue `caqi.compliance.calculo-executado.{municipioId}` bindada ao exchange `caqi.events` com routing key `caqi.calculo.executado.{municipioId}`. Recebe CalculoExecutadoEventDto, registra na cadeia de auditoria
+- [x] Endpoints REST com Spring Security + RBAC (LEITOR/GESTOR/ADMIN):
+  - POST /api/v1/compliance/avaliar?ano=2025 (GESTOR)
+  - GET  /api/v1/compliance/notificacoes?status=aberta&ano=2025 (LEITOR)
+  - PATCH /api/v1/compliance/notificacoes/{id}/status?novo=resolvida (GESTOR)
+  - GET  /api/v1/compliance/auditoria (LEITOR)
+  - GET  /api/v1/compliance/auditoria/verificar (LEITOR)
+- [x] AuditChainServiceTest unit: hash determinístico hex 64, avalanche em qualquer campo, GENESIS=64 zeros
 
 Sprint 3.C (próxima):
-- [ ] Endpoint /api/v1/fundeb/validacoes com lista de violações + prazos para regularização
-- [ ] Cross-svc test: docker-compose up → POST despesa que viola → ver evento → ver notificação no compliance
+- [ ] Endpoint /api/v1/fundeb/validacoes (consolida notificações + prazos legais)
+- [ ] Cross-svc smoke test E2E: docker-compose up → POST despesa que viola → POST avaliar → notificação criada
+- [ ] Bloqueio opcional: interceptor REST no financeiro-svc que rejeita POST despesa se derruba % abaixo do mínimo (configurável via env)
+- [ ] Promover DTOs duplicados (CalculoExecutadoEventDto, ExecucaoFundebDto) para shared lib `platform/caq-shared-domain`
 
 ## Fase 4 — Compras/Contratos + Tributário (Sprint 4–5) — `caq-financeiro-svc`
 

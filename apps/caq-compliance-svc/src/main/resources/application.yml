@@ -11,7 +11,7 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
-        default_schema: compliance
+        # default_schema removido — DDL ainda em public; schema-per-service vira em Fase 2.II
   flyway:
     enabled: false
   rabbitmq:
@@ -58,3 +58,21 @@ caqi:
   tenant:
     municipio-id: ${CAQI_MUNICIPIO_ID:000000}
     municipio-nome: ${CAQI_MUNICIPIO_NOME:Municipio Exemplo}
+  security:
+    users:
+      leitor:
+        username: ${CAQI_LEITOR_USERNAME:leitor}
+        password: ${CAQI_LEITOR_PASSWORD:trocar_em_prod}
+      gestor:
+        username: ${CAQI_GESTOR_USERNAME:gestor}
+        password: ${CAQI_GESTOR_PASSWORD:trocar_em_prod}
+      admin:
+        username: ${CAQI_ADMIN_USERNAME:admin}
+        password: ${CAQI_ADMIN_PASSWORD:trocar_em_prod}
+  # Cliente para consultar caq-financeiro-svc (fonte da execução Fundeb)
+  clients:
+    financeiro:
+      base-url: ${CAQ_FINANCEIRO_URL:http://localhost:8082}
+      # service account — leitor é suficiente
+      username: ${CAQI_LEITOR_USERNAME:leitor}
+      password: ${CAQI_LEITOR_PASSWORD:trocar_em_prod}
