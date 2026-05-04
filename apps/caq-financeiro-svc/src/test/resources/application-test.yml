@@ -1,0 +1,12 @@
+caqi:
+  security:
+    users:
+      leitor:  { username: leitor_test,  password: leitor_test_password  }
+      gestor:  { username: gestor_test,  password: gestor_test_password  }
+      admin:   { username: admin_test,   password: admin_test_password   }
+
+spring:
+  rabbitmq:
+    listener:
+      simple:
+        auto-startup: false

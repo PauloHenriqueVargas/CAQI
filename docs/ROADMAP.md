@@ -77,13 +77,34 @@ Sprint 2.B.iii (próxima):
 - [ ] TransactionalEventListener AFTER_COMMIT (eventos só após commit do BD)
 - [ ] Tests de integração HTTP via MockMvc com @WithMockUser para validar RBAC
 
-## Fase 3 — Fundeb/MDE + Validador (Sprint 3–4) — `caq-financeiro-svc`
+## Fase 3 — Fundeb/MDE + Validador
 
-- [ ] Schema `financeiro`: receitas, despesas, folha, fontes (VAAF/VAAT/VAAR), naturezas PCASP
-- [ ] CRUD básico via JPA
-- [ ] Motor de validação no `caq-compliance-svc`: 70% pessoal, 15% VAAT capital, MDE 25%
-- [ ] Bloqueio de empenho que viole regra (interceptor REST + evento RabbitMQ)
-- [ ] Endpoints `/api/v1/fundeb/execucao` e `/fundeb/validacoes`
+**Status: ⏳ Em andamento.**
+
+Sprint 3.A (concluída) — `caq-financeiro-svc`:
+- [x] JPA entities Receita, Despesa, FonteRecurso (mapeadas para tabelas existentes em V0001 schema public)
+- [x] Repositories com queries JPQL agregadas: somar por origem, por siope_grupo, pessoal por fonte (natureza LIKE '3.1%'), capital por fonte (natureza LIKE '4%')
+- [x] FundebService.calcular(ano) — retorna ExecucaoFundebDto com receitas/despesas consolidadas + 3 percentuais (MDE/Fundeb70/VAAT15) + 3 booleans cumpre*
+- [x] CRUD endpoints com Springdoc:
+  - GET/POST /api/v1/financeiro/receitas (filtro por ?ano=)
+  - GET/POST /api/v1/financeiro/despesas (filtro por ?ano=)
+  - GET/POST /api/v1/financeiro/fontes-recurso
+  - GET /api/v1/fundeb/execucao?ano=2025
+- [x] Spring Security HTTP Basic + RBAC declarativo (LEITOR/GESTOR/ADMIN — mesmo modelo do engine-svc)
+- [x] V9003 (db/seed dev/test): financeiro reproduzível — 5 receitas + 6 despesas → cenário cumpre os 3 limites
+- [x] FundebServiceTest unitário (Mockito): cenário-base do seed, violação Fundeb 70%, divisão por zero
+- [x] application.yml: removido `default_schema: financeiro` (DDL ainda no public — split em Fase 2.II)
+
+Sprint 3.B (próxima) — `caq-compliance-svc`:
+- [ ] Listener RabbitMQ que consome `caqi.calculo.executado.*` e cria registros de auditoria
+- [ ] AvaliadorComplianceService: aplica regras (MDE 25%, Fundeb 70%, VAAT 15%, VAAR) e gera Notificação
+- [ ] Endpoint /api/v1/compliance/notificacoes
+- [ ] Bloqueio: interceptor que rejeita POST /api/v1/financeiro/despesas se o lançamento derruba % abaixo do mínimo (opcional, configurável)
+- [ ] Logs imutáveis com chain SHA-256 em log_auditoria
+
+Sprint 3.C (próxima):
+- [ ] Endpoint /api/v1/fundeb/validacoes com lista de violações + prazos para regularização
+- [ ] Cross-svc test: docker-compose up → POST despesa que viola → ver evento → ver notificação no compliance
 
 ## Fase 4 — Compras/Contratos + Tributário (Sprint 4–5) — `caq-financeiro-svc`
 
