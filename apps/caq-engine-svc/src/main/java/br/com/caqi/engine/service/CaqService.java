@@ -1,9 +1,11 @@
 package br.com.caqi.engine.service;
 
+import br.com.caqi.engine.api.dto.CalculoExecutadoEvent;
 import br.com.caqi.engine.api.dto.ItemMemoriaCalculoDto;
 import br.com.caqi.engine.api.dto.ItemResultadoDto;
 import br.com.caqi.engine.api.dto.RequisicaoCalculoDto;
 import br.com.caqi.engine.api.dto.ResultadoCalculoDto;
+import br.com.caqi.engine.core.messaging.CaqEventPublisher;
 import br.com.caqi.engine.domain.CaqCalculator;
 import br.com.caqi.engine.domain.entity.CalculoCaq;
 import br.com.caqi.engine.domain.entity.CalculoCaqItem;
@@ -14,12 +16,15 @@ import br.com.caqi.engine.domain.repo.EtapaRepository;
 import br.com.caqi.engine.domain.repo.InsumoRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -30,10 +35,16 @@ public class CaqService {
     private final CalculoCaqRepository calculoRepo;
     private final EtapaRepository etapaRepo;
     private final InsumoRepository insumoRepo;
+    /** Optional — pode ser ausente se caqi.events.enabled=false (ex.: perfil test). */
+    private final Optional<CaqEventPublisher> eventPublisher;
+
+    @Value("${caqi.tenant.municipio-id:000000}")
+    private String municipioId;
 
     /**
-     * Executa o cálculo e persiste cada (escola, etapa) — substituindo cálculo prévio do mesmo trio
-     * (escola_id, etapa_id, ano), conforme UNIQUE constraint da tabela.
+     * Executa o cálculo, persiste cada (escola, etapa) — substituindo cálculo prévio do mesmo
+     * trio (escola_id, etapa_id, ano) — e publica CalculoExecutadoEvent (fire-and-forget) para
+     * cada cálculo persistido.
      */
     @Transactional
     public ResultadoCalculoDto calcular(RequisicaoCalculoDto req) {
@@ -42,7 +53,6 @@ public class CaqService {
 
         ResultadoCalculoDto resultado = calculator.calcular(req);
 
-        // Cache lookups por código (1 query cada, em vez de N)
         Map<String, Etapa> etapaPorCodigo = new HashMap<>();
         Map<String, Insumo> insumoPorCodigo = new HashMap<>();
         for (String c : req.etapas()) {
@@ -52,14 +62,25 @@ public class CaqService {
             insumoPorCodigo.put(i.getCodigo(), i);
         }
 
+        List<CalculoExecutadoEvent> eventos = new ArrayList<>();
         for (ItemResultadoDto item : resultado.itens()) {
-            persistirCalculoItem(req.ano(), item, resultado.memoria(), etapaPorCodigo, insumoPorCodigo);
+            CalculoCaq persistido = persistirCalculoItem(
+                    req.ano(), item, resultado.memoria(), etapaPorCodigo, insumoPorCodigo);
+            if (persistido != null) {
+                eventos.add(CalculoExecutadoEvent.novo(
+                        municipioId, persistido.getId(), persistido.getEscolaId(),
+                        item.etapaId(), persistido.getAno(),
+                        item.caqiAlunoAno(), item.caqAlunoAno(), item.gapAlunoAno()));
+            }
         }
+
+        // TODO Fase 9: trocar por TransactionalEventListener AFTER_COMMIT — hoje publicamos antes do commit.
+        eventPublisher.ifPresent(p -> eventos.forEach(p::publicar));
 
         return resultado;
     }
 
-    private void persistirCalculoItem(
+    private CalculoCaq persistirCalculoItem(
             int ano,
             ItemResultadoDto item,
             List<ItemMemoriaCalculoDto> memoriaCompleta,
@@ -70,10 +91,9 @@ public class CaqService {
         Etapa etapa = etapaPorCodigo.get(item.etapaId());
         if (etapa == null) {
             log.warn("Persistência ignorada — etapa {} não encontrada", item.etapaId());
-            return;
+            return null;
         }
 
-        // Substitui cálculo anterior (idempotência)
         calculoRepo.findByEscolaIdAndEtapaIdAndAno(escolaId, etapa.getId(), ano)
                 .ifPresent(calculoRepo::delete);
 
@@ -105,6 +125,6 @@ public class CaqService {
             c.addItem(ci);
         }
 
-        calculoRepo.save(c);
+        return calculoRepo.save(c);
     }
 }

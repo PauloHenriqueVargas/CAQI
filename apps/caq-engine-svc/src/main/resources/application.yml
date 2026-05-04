@@ -87,3 +87,19 @@ caqi:
     enforce-fundeb-70: ${CAQI_COMPLIANCE_FUNDEB_70:true}
     enforce-vaat-15: ${CAQI_COMPLIANCE_VAAT_15:true}
     enforce-mde-25: ${CAQI_COMPLIANCE_MDE_25:true}
+  security:
+    users:
+      # MVP — substituir por Gov.br OAuth2 + DB user store em produção
+      leitor:
+        username: ${CAQI_LEITOR_USERNAME:leitor}
+        password: ${CAQI_LEITOR_PASSWORD:trocar_em_prod}
+      gestor:
+        username: ${CAQI_GESTOR_USERNAME:gestor}
+        password: ${CAQI_GESTOR_PASSWORD:trocar_em_prod}
+      admin:
+        username: ${CAQI_ADMIN_USERNAME:admin}
+        password: ${CAQI_ADMIN_PASSWORD:trocar_em_prod}
+  events:
+    # Quando true, publica CalculoExecutadoEvent no exchange caqi.events.
+    # Desligar (false) quando RabbitMQ não estiver disponível, ou em testes.
+    enabled: ${CAQI_EVENTS_ENABLED:true}

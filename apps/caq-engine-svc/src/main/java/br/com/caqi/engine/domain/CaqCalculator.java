@@ -53,6 +53,7 @@ public class CaqCalculator {
     private final CustoInsumoRepository custoRepo;
     private final EscolaRepository escolaRepo;
     private final MatriculaRepository matriculaRepo;
+    private final IndexadorService indexador;
 
     public ResultadoCalculoDto calcular(RequisicaoCalculoDto req) {
         LocalDate dataReferencia = LocalDate.of(req.ano(), 1, 1);
@@ -94,7 +95,8 @@ public class CaqCalculator {
                         CustoInsumo custo = custoOpt.get();
 
                         Calculado c = calcularContribuicao(
-                                escolaIdStr, etapaCodigo, perfil, insumo, custo, params, totalAlunosEscola);
+                                escolaIdStr, etapaCodigo, perfil, insumo, custo, params, totalAlunosEscola,
+                                dataReferencia);
                         if (c == null) continue;
 
                         memoria.add(c.memoria());
@@ -121,27 +123,37 @@ public class CaqCalculator {
 
     private Calculado calcularContribuicao(
             String escolaIdStr, String etapaCodigo, String perfil,
-            Insumo insumo, CustoInsumo custo, ParametroEtapa params, long totalAlunosEscola
+            Insumo insumo, CustoInsumo custo, ParametroEtapa params, long totalAlunosEscola,
+            java.time.LocalDate dataReferencia
     ) {
-        BigDecimal custoAnual = insumo.getQtdPadrao().multiply(custo.getCustoUnitario());
+        BigDecimal custoUnitarioOriginal = custo.getCustoUnitario();
+        BigDecimal custoUnitarioAjustado = indexador.custoAtualizado(custo, dataReferencia);
+        BigDecimal custoAnual = insumo.getQtdPadrao().multiply(custoUnitarioAjustado);
         Divisor divisor = calcularDivisor(insumo, params, totalAlunosEscola, escolaIdStr);
         if (divisor == null) return null;
 
         BigDecimal custoAlunoAno = custoAnual.divide(divisor.valor(), 4, RoundingMode.HALF_UP);
+        String reajusteNota = custoUnitarioAjustado.compareTo(custoUnitarioOriginal) == 0
+                ? ""
+                : String.format(" (reajustado de R$ %s pelo %s desde %s)",
+                        custoUnitarioOriginal.toPlainString(),
+                        custo.getIndiceAtualizacao(),
+                        custo.getVigenciaInicio());
         String baseCalculo = String.format(
-                "[%s] R$ %s × %s %s / %s = R$ %s/aluno/ano",
+                "[%s] R$ %s × %s %s / %s = R$ %s/aluno/ano%s",
                 perfil,
-                custo.getCustoUnitario().toPlainString(),
+                custoUnitarioAjustado.toPlainString(),
                 insumo.getQtdPadrao().toPlainString(),
                 insumo.getUnidade(),
                 divisor.descricao(),
-                custoAlunoAno.toPlainString()
+                custoAlunoAno.toPlainString(),
+                reajusteNota
         );
 
         return new Calculado(custoAlunoAno, new ItemMemoriaCalculoDto(
                 escolaIdStr, etapaCodigo, perfil,
                 insumo.getCodigo(), insumo.getNome(), insumo.getTipoAplicacao(),
-                insumo.getQtdPadrao(), custo.getCustoUnitario(),
+                insumo.getQtdPadrao(), custoUnitarioAjustado,
                 custoAnual, divisor.valor(), custoAlunoAno, baseCalculo
         ));
     }

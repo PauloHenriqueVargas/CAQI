@@ -65,12 +65,17 @@ Sprint 2.B.i (concluída):
   - GET /api/v1/caqi/calculos · GET /{id} (com memória completa)
 - [x] RestExceptionHandler global com RFC 7807 ProblemDetail (404, 400, validação)
 
-Sprint 2.B.ii (próxima):
+Sprint 2.B.ii (concluída):
+- [x] **Spring Security** — HTTP Basic Auth + InMemoryUserDetailsManager com 3 roles (LEITOR/GESTOR/ADMIN); RBAC declarativo em SecurityConfig (single source of truth) — ADMIN cria/edita insumos+parametros, GESTOR executa cálculos+novas vigências de custo, LEITOR consulta. Endpoints públicos: /api/v1/health, /actuator/health/**, swagger-ui. Senhas via env `CAQI_*_PASSWORD`. **Em prod: migrar para Gov.br OAuth2 (Fase 9).**
+- [x] **Indexador SINAPI/IPCA** — IndicePreco entity + IndicePrecoRepository + IndexadorService.custoAtualizado(custo, dataRef): aplica fator acumulado ∏(1 + var/100) entre o mês posterior à vigência e a data de referência. CaqCalculator agora usa custo atualizado em vez do raw. Memória registra reajuste no `baseCalculo`. Test unitário (mock) cobre 5 cenários: sem índice, vigência cobre data, 12 meses IPCA acumulado, deflação, sem variações cadastradas.
+- [x] **Eventos RabbitMQ** — CalculoExecutadoEvent (record) publicado no topic exchange `caqi.events` com routing key `caqi.calculo.executado.{municipioId}`. RabbitConfig + CaqEventPublisher (@ConditionalOnProperty `caqi.events.enabled`). CaqService publica fire-and-forget após persist (TODO Fase 9: trocar por TransactionalEventListener AFTER_COMMIT). Test profile desliga eventos.
+- [x] OpenAPI atualizada (springdoc) com SecurityScheme Basic Auth — Swagger UI mostra cadeado e permite login.
+
+Sprint 2.B.iii (próxima):
 - [ ] POST/PUT em parametros/etapas (operação delicada — afeta cálculos retroativos)
-- [ ] Indexador SINAPI/IPCA: reprecifica custo aplicando IPCA acumulado da vigência até o ano de cálculo
-- [ ] Publicação de evento `caqi.calculo.executado` no RabbitMQ (consumido pelo compliance-svc)
 - [ ] Relatório oficial: PDF do cálculo com memória (openhtmltopdf)
-- [ ] Spring Security: RBAC mínimo (leitor, gestor, admin) em todos os endpoints CRUD
+- [ ] TransactionalEventListener AFTER_COMMIT (eventos só após commit do BD)
+- [ ] Tests de integração HTTP via MockMvc com @WithMockUser para validar RBAC
 
 ## Fase 3 — Fundeb/MDE + Validador (Sprint 3–4) — `caq-financeiro-svc`
 
