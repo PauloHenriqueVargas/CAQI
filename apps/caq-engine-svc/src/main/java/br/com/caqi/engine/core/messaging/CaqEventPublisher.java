@@ -1,6 +1,6 @@
 package br.com.caqi.engine.core.messaging;
 
-import br.com.caqi.engine.api.dto.CalculoExecutadoEvent;
+import br.com.caqi.shared.events.CalculoExecutadoEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.AmqpException;

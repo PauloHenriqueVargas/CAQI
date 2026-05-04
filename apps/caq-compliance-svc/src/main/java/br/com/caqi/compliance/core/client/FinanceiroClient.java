@@ -1,6 +1,6 @@
 package br.com.caqi.compliance.core.client;
 
-import br.com.caqi.compliance.api.dto.ExecucaoFundebDto;
+import br.com.caqi.shared.dto.ExecucaoFundebDto;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

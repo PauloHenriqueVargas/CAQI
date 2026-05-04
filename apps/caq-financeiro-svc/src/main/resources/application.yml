@@ -58,6 +58,11 @@ caqi:
   tenant:
     municipio-id: ${CAQI_MUNICIPIO_ID:000000}
     municipio-nome: ${CAQI_MUNICIPIO_NOME:Municipio Exemplo}
+  compliance:
+    # Quando true, POST /api/v1/financeiro/despesas é rejeitado (409 Conflict) se a despesa
+    # derruba MDE/Fundeb70/VAAT15 de cumpre→não-cumpre. Default false em prod (apenas alerta
+    # via notificação no compliance-svc).
+    bloquear-empenhos-violadores: ${CAQI_BLOQUEAR_EMPENHOS_VIOLADORES:false}
   security:
     users:
       leitor:

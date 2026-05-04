@@ -5,6 +5,7 @@ plugins {
 description = "Motor CAQ/CAQi — cálculo, simulações, parâmetros, índices, insumos. Owner do schema."
 
 dependencies {
+    implementation(project(":platform:caq-shared-domain"))
     implementation(libs.spring.boot.starter.web)
     implementation(libs.spring.boot.starter.actuator)
     implementation(libs.spring.boot.starter.data.jpa)

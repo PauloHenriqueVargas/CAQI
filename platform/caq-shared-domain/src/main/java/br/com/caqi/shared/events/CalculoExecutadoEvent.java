@@ -1,20 +1,19 @@
-package br.com.caqi.engine.api.dto;
-
-import io.swagger.v3.oas.annotations.media.Schema;
+package br.com.caqi.shared.events;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
 /**
- * Evento publicado no exchange caqi.events com routing key
- *   caqi.calculo.executado.{municipioId}
- * após cada cálculo CAQ/CAQi persistido com sucesso (1 por escola+etapa).
+ * Evento publicado por caq-engine-svc no exchange caqi.events com routing key
+ *   caqi.calculo.executado.{tenantMunicipioId}
+ * após cada cálculo CAQ/CAQi persistido (1 por escola+etapa).
  *
- * Consumidores naturais: caq-compliance-svc (atualiza dashboards de gap),
- * caq-financeiro-svc (compara com execução orçamentária).
+ * Consumidores: caq-compliance-svc (auditoria + avaliação), caq-financeiro-svc
+ * (correlação com execução), web BFF (notificação UI).
+ *
+ * Esta é a contract canônica — produtor e consumidor MUST usar este FQN.
  */
-@Schema(description = "Evento de domínio: cálculo CAQ/CAQi executado")
 public record CalculoExecutadoEvent(
         UUID eventId,
         Instant occurredAt,

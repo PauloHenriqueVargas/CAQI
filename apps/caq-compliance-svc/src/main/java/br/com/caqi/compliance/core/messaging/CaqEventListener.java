@@ -1,6 +1,6 @@
 package br.com.caqi.compliance.core.messaging;
 
-import br.com.caqi.compliance.api.dto.CalculoExecutadoEventDto;
+import br.com.caqi.shared.events.CalculoExecutadoEvent;
 import br.com.caqi.compliance.domain.AuditChainService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +25,7 @@ public class CaqEventListener {
 
     @RabbitListener(queues = "caqi.compliance.calculo-executado.${caqi.tenant.municipio-id:000000}",
             id = "calculoExecutadoListener")
-    public void onCalculoExecutado(CalculoExecutadoEventDto event) {
+    public void onCalculoExecutado(CalculoExecutadoEvent event) {
         log.info("Evento calculo.executado recebido: id={} calculo={} escola={} etapa={} ano={}",
                 event.eventId(), event.calculoId(), event.escolaId(), event.etapaCodigo(), event.ano());
 

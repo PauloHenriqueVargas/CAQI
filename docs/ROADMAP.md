@@ -109,11 +109,16 @@ Sprint 3.B (concluída) — `caq-compliance-svc`:
   - GET  /api/v1/compliance/auditoria/verificar (LEITOR)
 - [x] AuditChainServiceTest unit: hash determinístico hex 64, avalanche em qualquer campo, GENESIS=64 zeros
 
-Sprint 3.C (próxima):
+Sprint 3.C (concluída):
+- [x] **Shared lib `platform/caq-shared-domain`**: CalculoExecutadoEvent + ExecucaoFundebDto records puros (sem dependências); java-library plugin; settings.gradle.kts inclui o módulo; engine, financeiro e compliance dependem com `implementation(project(":platform:caq-shared-domain"))`. Consequência: produtor e consumidor RabbitMQ usam o mesmo FQN — Jackson TypeId casa.
+- [x] Removidos 4 DTOs duplicados (engine/api/dto/CalculoExecutadoEvent, financeiro/api/dto/ExecucaoFundebDto, compliance/api/dto/CalculoExecutadoEventDto, compliance/api/dto/ExecucaoFundebDto). Imports atualizados em 8 arquivos.
+- [x] **Bloqueador de empenho** (`BloqueadorEmpenhoService`): persiste a despesa, faz flush, recalcula execução e detecta transição cumpre TRUE→FALSE via `AnalisadorImpactoFundeb` (função pura, testável). Quando flag `caqi.compliance.bloquear-empenhos-violadores=true` (default false), lança `EmpenhoBloqueadoException` (409 Conflict) — `@Transactional` faz rollback do INSERT.
+- [x] DespesasController.criar() agora delega ao bloqueador.
+- [x] Test unit `AnalisadorImpactoFundebTest`: 5 cenários (sem transição, MDE/Fundeb/VAAT cada um derrubado, já violado antes não-detecta).
+
+Sprint 3.D (próxima — opcional antes de Fase 4):
+- [ ] Cross-svc smoke test E2E (script bash que sobe docker-compose, POST despesa violadora com flag on, espera 409)
 - [ ] Endpoint /api/v1/fundeb/validacoes (consolida notificações + prazos legais)
-- [ ] Cross-svc smoke test E2E: docker-compose up → POST despesa que viola → POST avaliar → notificação criada
-- [ ] Bloqueio opcional: interceptor REST no financeiro-svc que rejeita POST despesa se derruba % abaixo do mínimo (configurável via env)
-- [ ] Promover DTOs duplicados (CalculoExecutadoEventDto, ExecucaoFundebDto) para shared lib `platform/caq-shared-domain`
 
 ## Fase 4 — Compras/Contratos + Tributário (Sprint 4–5) — `caq-financeiro-svc`
 

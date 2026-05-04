@@ -1,11 +1,11 @@
-package br.com.caqi.compliance.api.dto;
+package br.com.caqi.shared.dto;
 
 import java.math.BigDecimal;
 
 /**
- * Mirror do DTO publicado por caq-financeiro-svc /api/v1/fundeb/execucao.
- * Cuidado: mantém field names alinhados — qualquer mudança no produtor exige
- * coordenação. Idealmente promover para uma library compartilhada (Fase 2.II).
+ * Resposta de caq-financeiro-svc /api/v1/fundeb/execucao?ano=N.
+ * Consumido por caq-compliance-svc (FinanceiroClient) — também serve como
+ * contract documentado para qualquer cliente externo (BFF, painéis).
  */
 public record ExecucaoFundebDto(
         Integer ano,

@@ -2,13 +2,13 @@ package br.com.caqi.financeiro.api;
 
 import br.com.caqi.financeiro.api.dto.DespesaDtos.DespesaCreateDto;
 import br.com.caqi.financeiro.api.dto.DespesaDtos.DespesaDto;
+import br.com.caqi.financeiro.domain.BloqueadorEmpenhoService;
 import br.com.caqi.financeiro.domain.repo.DespesaRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -26,6 +26,7 @@ import java.util.List;
 public class DespesasController {
 
     private final DespesaRepository despesaRepo;
+    private final BloqueadorEmpenhoService bloqueador;
 
     @Operation(summary = "Lista despesas. Filtre por ano (4 dígitos) opcional.")
     @GetMapping
@@ -38,11 +39,11 @@ public class DespesasController {
         return despesaRepo.listarDoAno(inicio, fim).stream().map(DespesaDto::from).toList();
     }
 
-    @Operation(summary = "Cria lançamento de despesa")
+    @Operation(summary = "Cria lançamento de despesa. Quando caqi.compliance.bloquear-empenhos-violadores=true, " +
+            "rejeita (409 Conflict) se a despesa derruba alguma vinculação cumpre→não-cumpre.")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @Transactional
     public DespesaDto criar(@Valid @RequestBody DespesaCreateDto dto) {
-        return DespesaDto.from(despesaRepo.save(dto.toEntity()));
+        return DespesaDto.from(bloqueador.criarComCheck(dto.toEntity()));
     }
 }

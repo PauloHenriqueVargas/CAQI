@@ -1,6 +1,6 @@
 package br.com.caqi.financeiro.api;
 
-import br.com.caqi.financeiro.api.dto.ExecucaoFundebDto;
+import br.com.caqi.shared.dto.ExecucaoFundebDto;
 import br.com.caqi.financeiro.domain.FundebService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

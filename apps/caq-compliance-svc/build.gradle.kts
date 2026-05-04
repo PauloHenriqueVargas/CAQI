@@ -5,6 +5,7 @@ plugins {
 description = "Validações legais (MDE/Fundeb/VAAR), auditoria imutável (chain SHA-256), ROPA/LGPD, transparência LAI, integração SIOPE."
 
 dependencies {
+    implementation(project(":platform:caq-shared-domain"))
     implementation(libs.spring.boot.starter.web)
     implementation(libs.spring.boot.starter.actuator)
     implementation(libs.spring.boot.starter.data.jpa)

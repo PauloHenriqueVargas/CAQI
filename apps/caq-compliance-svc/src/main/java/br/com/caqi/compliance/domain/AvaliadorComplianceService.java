@@ -1,6 +1,6 @@
 package br.com.caqi.compliance.domain;
 
-import br.com.caqi.compliance.api.dto.ExecucaoFundebDto;
+import br.com.caqi.shared.dto.ExecucaoFundebDto;
 import br.com.caqi.compliance.core.client.FinanceiroClient;
 import br.com.caqi.compliance.domain.entity.Notificacao;
 import br.com.caqi.compliance.domain.repo.NotificacaoRepository;

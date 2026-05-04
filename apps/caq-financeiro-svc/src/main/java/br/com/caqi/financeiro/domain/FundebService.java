@@ -1,6 +1,6 @@
 package br.com.caqi.financeiro.domain;
 
-import br.com.caqi.financeiro.api.dto.ExecucaoFundebDto;
+import br.com.caqi.shared.dto.ExecucaoFundebDto;
 import br.com.caqi.financeiro.domain.repo.DespesaRepository;
 import br.com.caqi.financeiro.domain.repo.ReceitaRepository;
 import lombok.RequiredArgsConstructor;

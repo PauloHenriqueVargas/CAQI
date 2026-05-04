@@ -5,6 +5,7 @@ plugins {
 description = "Orçamento, Fundeb (70%/15%/VAAR), MDE 25%, contabilidade pública (SIAFIC/PCASP), tributário (retenções)."
 
 dependencies {
+    implementation(project(":platform:caq-shared-domain"))
     implementation(libs.spring.boot.starter.web)
     implementation(libs.spring.boot.starter.actuator)
     implementation(libs.spring.boot.starter.data.jpa)

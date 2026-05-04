@@ -20,6 +20,7 @@ dependencyResolutionManagement {
 }
 
 include(
+    "platform:caq-shared-domain",
     "apps:caq-engine-svc",
     "apps:caq-financeiro-svc",
     "apps:caq-escolar-svc",

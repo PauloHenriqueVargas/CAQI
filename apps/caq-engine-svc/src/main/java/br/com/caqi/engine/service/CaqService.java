@@ -1,6 +1,6 @@
 package br.com.caqi.engine.service;
 
-import br.com.caqi.engine.api.dto.CalculoExecutadoEvent;
+import br.com.caqi.shared.events.CalculoExecutadoEvent;
 import br.com.caqi.engine.api.dto.ItemMemoriaCalculoDto;
 import br.com.caqi.engine.api.dto.ItemResultadoDto;
 import br.com.caqi.engine.api.dto.RequisicaoCalculoDto;
