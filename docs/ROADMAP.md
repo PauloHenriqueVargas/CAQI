@@ -278,13 +278,20 @@ Sprint 9.B (parcial 2 — concluída): MFA TOTP backend
 - [x] SecurityConfig: + `/api/v1/auth/mfa/**` autenticado (cada usuário gerencia o próprio)
 - [x] MfaServiceTest unit (Mockito + repo em memória) cobre 5 cenários: setup gera URI correta, enable valida código (correto/incorreto), verify só funciona quando enabled, disable exige confirmação, estaHabilitado reflete ciclo
 
-Sprint 9.B (restante — defer, exige integração externa):
-- [ ] Integração MFA no fluxo de login (NextAuth segundo passo após CredentialsProvider)
+Sprint 9.B (parcial 3 — concluída): Integração MFA no NextAuth + UI `/profile/mfa`
+- [x] `lib/auth-options.ts`: CredentialsProvider ganha campo `mfaCode`. Authorize: 1) valida basic auth; 2) consulta `/api/v1/auth/mfa/status` (fail-closed se /status indisponível); 3) se enabled, exige `mfaCode` válido via `POST /verify`; 4) sessão criada normalmente em sucesso
+- [x] `/login` ganha campo "Código MFA (se habilitado)" — opcional, `inputMode=numeric pattern=\\d{6} autoComplete=one-time-code`
+- [x] `/profile/mfa` (server) consulta `/status` e delega para `MfaManagementUI` (client) que tem 3 modos: idle (com status) / configurando (QR + secret + campo código) / desativando (campo código)
+- [x] **QR via `qrcode.react@4.0.1`** — adicionado em apps/web/package.json
+- [x] BFF route `/api/mfa/[acao]/route.ts` — proxy whitelist (setup/enable/verify/disable/status), GET só /status, POST nos demais; injeta Basic Auth da sessão via `fetchService`
+- [x] Nav ganha link "MFA"
+- [x] `lib/types.ts`: + `MfaStatusDto` + `MfaSetupResponseDto`
+
+Sprint 9.B (restante — defer):
 - [ ] Auth Gov.br OAuth2 — NextAuth provider customizado + Spring Resource Server validando JWT (precisa credenciais Gov.br reais para testar)
 - [ ] mTLS entre serviços (Istio/Linkerd) — opcional
 - [ ] Pen-test interno (OWASP Top 10, IDOR)
-- [ ] Disaster recovery + backups (pg_dump → S3 com KMS)
-- [ ] Documentação de operação (runbook por incidente)
+- [ ] Backup codes para MFA (caso o usuário perca o app autenticador)
 
 ## Cronograma indicativo
 

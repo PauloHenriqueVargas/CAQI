@@ -11,6 +11,7 @@ export default function LoginPage() {
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [mfaCode, setMfaCode] = useState('');
   const [erro, setErro] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(false);
 
@@ -18,10 +19,15 @@ export default function LoginPage() {
     e.preventDefault();
     setErro(null);
     setCarregando(true);
-    const res = await signIn('credentials', { username, password, redirect: false });
+    const res = await signIn('credentials', {
+      username,
+      password,
+      mfaCode: mfaCode.trim() || undefined,
+      redirect: false,
+    });
     setCarregando(false);
     if (res?.error) {
-      setErro('Usuário ou senha inválidos');
+      setErro('Usuário, senha ou código MFA inválidos.');
       return;
     }
     router.push(callbackUrl);
@@ -64,6 +70,23 @@ export default function LoginPage() {
             />
           </label>
 
+          <label className="block">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              Código MFA <span className="font-normal text-slate-400">(se habilitado)</span>
+            </span>
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="\d{6}"
+              maxLength={6}
+              autoComplete="one-time-code"
+              placeholder="6 dígitos"
+              value={mfaCode}
+              onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ''))}
+              className="mt-1 block w-full rounded border border-slate-300 px-3 py-2 font-mono tracking-widest focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
+            />
+          </label>
+
           {erro && (
             <p role="alert" className="rounded bg-danger/10 px-3 py-2 text-sm text-danger">
               {erro}
@@ -80,7 +103,7 @@ export default function LoginPage() {
         </div>
 
         <p className="mt-6 text-xs text-slate-400">
-          Em produção: login via Gov.br OAuth2 (Fase 9). MVP usa HTTP Basic do backend.
+          Em produção: login via Gov.br OAuth2 (Fase 9.B). MVP usa HTTP Basic do backend.
         </p>
       </form>
     </main>

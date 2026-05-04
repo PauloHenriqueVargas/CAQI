@@ -80,6 +80,16 @@ export interface ContratoDto {
   pncpId: string | null;
 }
 
+export interface MfaStatusDto {
+  enabled: boolean;
+  username: string;
+}
+
+export interface MfaSetupResponseDto {
+  secret: string;
+  otpauthUri: string;
+}
+
 /** Helpers de formatação BR */
 export const fmt = {
   money: (v: Money | string | number | null | undefined): string => {
