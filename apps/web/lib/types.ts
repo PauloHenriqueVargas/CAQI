@@ -83,11 +83,23 @@ export interface ContratoDto {
 export interface MfaStatusDto {
   enabled: boolean;
   username: string;
+  backupCodesRemaining: number;
 }
 
 export interface MfaSetupResponseDto {
   secret: string;
   otpauthUri: string;
+}
+
+export interface MfaEnableResponseDto {
+  enabled: boolean;
+  username: string;
+  /** 8 backup codes one-time-use — só retornados aqui. Exibir e exigir que o usuário guarde. */
+  backupCodes: string[];
+}
+
+export interface MfaBackupCodesResponseDto {
+  backupCodes: string[];
 }
 
 /** Helpers de formatação BR */

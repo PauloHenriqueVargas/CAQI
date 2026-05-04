@@ -76,13 +76,11 @@ export default function LoginPage() {
             </span>
             <input
               type="text"
-              inputMode="numeric"
-              pattern="\d{6}"
-              maxLength={6}
+              maxLength={11}
               autoComplete="one-time-code"
-              placeholder="6 dígitos"
+              placeholder="6 dígitos OU código de recuperação"
               value={mfaCode}
-              onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ''))}
+              onChange={(e) => setMfaCode(e.target.value.replace(/[^A-Za-z0-9-]/g, '').toUpperCase())}
               className="mt-1 block w-full rounded border border-slate-300 px-3 py-2 font-mono tracking-widest focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
             />
           </label>

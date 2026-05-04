@@ -2,7 +2,10 @@ import { NextResponse } from 'next/server';
 
 import { ApiError, fetchService } from '@/lib/api-client';
 
-const ACOES_PERMITIDAS = new Set(['setup', 'enable', 'verify', 'disable', 'status']);
+const ACOES_PERMITIDAS = new Set([
+  'setup', 'enable', 'verify', 'disable', 'status',
+  'regenerate-backup-codes',
+]);
 
 /**
  * BFF proxy genérico para /api/v1/auth/mfa/{acao} no caq-engine-svc.

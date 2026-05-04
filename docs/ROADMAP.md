@@ -287,11 +287,26 @@ Sprint 9.B (parcial 3 — concluída): Integração MFA no NextAuth + UI `/profi
 - [x] Nav ganha link "MFA"
 - [x] `lib/types.ts`: + `MfaStatusDto` + `MfaSetupResponseDto`
 
+Sprint 9.B (parcial 4 — concluída): Backup codes para recuperação de MFA
+- [x] **V0008** — colunas `backup_codes_hashes JSONB` e `backup_codes_generated_at` em `usuario_mfa`
+- [x] UsuarioMfa entity ganha `backupCodesHashes` (List<String> via @JdbcTypeCode JSONB)
+- [x] **MfaService**:
+  - `enable()` agora retorna `EnableResultado(success, backupCodes)` — em sucesso, gera 8 códigos one-time-use de 10 chars (alfabeto sem 0/O/1/I, ≈50 bits entropia cada), persiste como SHA-256 hex, devolve raw UMA vez
+  - `verify(codigo)` aceita TOTP (6 dígitos) OU backup code (10 alphanum); normaliza espaços/hífens/case; backup code é consumido (removido do array)
+  - `regenerateBackupCodes(username, codigoTotp)` invalida conjunto antigo, exige TOTP válido
+  - `countBackupCodesRemaining(username)` para o badge de status
+- [x] DTOs: novos `MfaVerifyDto`, `MfaEnableResponseDto`, `MfaBackupCodesResponseDto`; `MfaStatusDto` ganha `backupCodesRemaining`
+- [x] MfaController: `enable()` devolve backup codes; novo `POST /regenerate-backup-codes`; `/verify` usa MfaVerifyDto
+- [x] Frontend `MfaManagementUI` com modo `mostrando_codes`: exibe 8 códigos pós-enable/regenerate em grid 4×2 com "Copiar todos" e "Baixar .txt"; status mostra `X/8` com alerta vermelho se < 3
+- [x] `/login` campo MFA aceita 6-11 chars alphanum (TOTP ou backup code); auth-options regex relaxa para `\\d{6}|[A-Z2-9]{10}`
+- [x] BFF whitelist `/api/mfa/[acao]` ganha `regenerate-backup-codes`
+- [x] `lib/types.ts` atualizado
+- [x] MfaServiceTest cobre 9 cenários (setup vazio em backup, enable gera 8 únicos, TOTP, backup one-time-use, normalização, rejeita formato inválido, regenerate, disable, ciclo)
+
 Sprint 9.B (restante — defer):
 - [ ] Auth Gov.br OAuth2 — NextAuth provider customizado + Spring Resource Server validando JWT (precisa credenciais Gov.br reais para testar)
 - [ ] mTLS entre serviços (Istio/Linkerd) — opcional
 - [ ] Pen-test interno (OWASP Top 10, IDOR)
-- [ ] Backup codes para MFA (caso o usuário perca o app autenticador)
 
 ## Cronograma indicativo
 

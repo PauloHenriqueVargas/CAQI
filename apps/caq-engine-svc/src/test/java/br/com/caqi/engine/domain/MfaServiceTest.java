@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -20,23 +21,20 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 
 /**
- * Test unitário do MfaService — valida o ciclo setup → enable → verify
- * usando o gerador de código TOTP da própria lib para simular o app
- * autenticador no momento atual.
+ * Test unitário do MfaService — cobre TOTP + backup codes.
  *
- * NOTA: o repositório é mockado com um Map em memória para preservar
- * o estado entre operações (setup persiste, enable lê e atualiza).
+ * Repositório mockado com Map em memória preserva o estado entre operações.
+ * Códigos TOTP são calculados via mesma lib do service (DefaultCodeGenerator).
  */
 class MfaServiceTest {
 
     private MfaService service;
-    private UsuarioMfaRepository repo;
     private final Map<String, UsuarioMfa> store = new HashMap<>();
 
     @BeforeEach
     void setUp() {
         store.clear();
-        repo = mock(UsuarioMfaRepository.class);
+        UsuarioMfaRepository repo = mock(UsuarioMfaRepository.class);
         when(repo.findById(anyString())).thenAnswer(inv -> Optional.ofNullable(store.get(inv.<String>getArgument(0))));
         when(repo.save(any(UsuarioMfa.class))).thenAnswer(inv -> {
             UsuarioMfa u = inv.getArgument(0);
@@ -44,8 +42,15 @@ class MfaServiceTest {
             store.put(u.getUsername(), u);
             return u;
         });
+        org.mockito.Mockito.doAnswer(inv -> { store.remove(inv.<String>getArgument(0)); return null; })
+                .when(repo).deleteById(anyString());
 
         service = new MfaService(repo, "Município Teste");
+    }
+
+    private String totpAtual(String secret) throws Exception {
+        return new DefaultCodeGenerator(HashingAlgorithm.SHA1, 6)
+                .generate(secret, Instant.now().getEpochSecond() / 30);
     }
 
     @Test
@@ -53,7 +58,7 @@ class MfaServiceTest {
     void setupGeraSecretEUri() {
         var r = service.setup("admin");
 
-        assertThat(r.secret()).isNotBlank().matches("[A-Z2-7]+"); // base32
+        assertThat(r.secret()).isNotBlank().matches("[A-Z2-7]+");
         assertThat(r.otpauthUri())
                 .startsWith("otpauth://totp/")
                 .contains("secret=" + r.secret())
@@ -64,33 +69,41 @@ class MfaServiceTest {
                 .contains("period=30");
 
         assertThat(store.get("admin").getEnabled()).isFalse();
+        assertThat(store.get("admin").getBackupCodesHashes()).isEmpty();
     }
 
     @Test
-    @DisplayName("enable() com código correto ativa MFA; código incorreto falha")
-    void enableValidaCodigoCorreto() throws Exception {
+    @DisplayName("enable() com código correto ativa MFA E retorna 8 backup codes; incorreto falha")
+    void enableGeraBackupCodes() throws Exception {
         var setup = service.setup("admin");
+        String codigo = totpAtual(setup.secret());
 
-        // Calcula código atual usando a mesma lib que o service usa
-        String codigoCerto = new DefaultCodeGenerator(HashingAlgorithm.SHA1, 6)
-                .generate(setup.secret(), Instant.now().getEpochSecond() / 30);
-
-        assertThat(service.enable("admin", "000000")).isFalse();   // código errado
+        // Errado
+        var falho = service.enable("admin", "000000");
+        assertThat(falho.success()).isFalse();
+        assertThat(falho.backupCodes()).isEmpty();
         assertThat(store.get("admin").getEnabled()).isFalse();
 
-        assertThat(service.enable("admin", codigoCerto)).isTrue();  // código correto
+        // Certo
+        var ok = service.enable("admin", codigo);
+        assertThat(ok.success()).isTrue();
+        assertThat(ok.backupCodes()).hasSize(8);
+        assertThat(ok.backupCodes()).allMatch(c -> c.matches("[A-Z2-9]{10}"));
+        assertThat(ok.backupCodes()).doesNotHaveDuplicates();
+
         assertThat(store.get("admin").getEnabled()).isTrue();
         assertThat(store.get("admin").getEnabledAt()).isNotNull();
+        assertThat(store.get("admin").getBackupCodesHashes()).hasSize(8);
+        assertThat(store.get("admin").getBackupCodesGeneratedAt()).isNotNull();
     }
 
     @Test
-    @DisplayName("verify() só valida quando MFA já habilitado")
-    void verifySoFuncionaQuandoEnabled() throws Exception {
+    @DisplayName("verify() aceita TOTP atual quando habilitado")
+    void verifyAceitaTotp() throws Exception {
         var setup = service.setup("admin");
-        String codigo = new DefaultCodeGenerator(HashingAlgorithm.SHA1, 6)
-                .generate(setup.secret(), Instant.now().getEpochSecond() / 30);
+        String codigo = totpAtual(setup.secret());
 
-        // Antes do enable, verify devolve false (MFA não está ativo)
+        // Antes do enable, verify devolve false
         assertThat(service.verify("admin", codigo)).isFalse();
 
         service.enable("admin", codigo);
@@ -98,11 +111,78 @@ class MfaServiceTest {
     }
 
     @Test
+    @DisplayName("verify() consome backup code (one-time-use) e remove do array")
+    void verifyConsomeBackupCode() throws Exception {
+        var setup = service.setup("admin");
+        var enable = service.enable("admin", totpAtual(setup.secret()));
+        List<String> backups = enable.backupCodes();
+        String primeiroCode = backups.get(0);
+
+        assertThat(service.countBackupCodesRemaining("admin")).isEqualTo(8);
+
+        // Primeiro uso: ok
+        assertThat(service.verify("admin", primeiroCode)).isTrue();
+        assertThat(service.countBackupCodesRemaining("admin")).isEqualTo(7);
+
+        // Segundo uso do mesmo code: rejeitado
+        assertThat(service.verify("admin", primeiroCode)).isFalse();
+        assertThat(service.countBackupCodesRemaining("admin")).isEqualTo(7);
+
+        // Outro backup code ainda funciona
+        assertThat(service.verify("admin", backups.get(1))).isTrue();
+        assertThat(service.countBackupCodesRemaining("admin")).isEqualTo(6);
+    }
+
+    @Test
+    @DisplayName("verify() normaliza espaços/hífens e case")
+    void verifyNormalizaInput() throws Exception {
+        var setup = service.setup("admin");
+        var enable = service.enable("admin", totpAtual(setup.secret()));
+        String code = enable.backupCodes().get(0);
+
+        // Insere espaço/hífen e usa lowercase — deve aceitar
+        String comFormatacao = code.substring(0, 5).toLowerCase() + "-" + code.substring(5).toLowerCase();
+        assertThat(service.verify("admin", comFormatacao)).isTrue();
+    }
+
+    @Test
+    @DisplayName("verify() rejeita formato inválido (não 6 dígitos nem 10 alphanum)")
+    void verifyRejeitaFormatoInvalido() throws Exception {
+        var setup = service.setup("admin");
+        service.enable("admin", totpAtual(setup.secret()));
+
+        assertThat(service.verify("admin", "12345")).isFalse();           // muito curto
+        assertThat(service.verify("admin", "ABCDE12345A")).isFalse();     // 11 chars
+        assertThat(service.verify("admin", "ABCDE123!@")).isFalse();      // chars inválidos
+    }
+
+    @Test
+    @DisplayName("regenerateBackupCodes() exige TOTP válido e invalida codes antigos")
+    void regenerateInvalidaAntigos() throws Exception {
+        var setup = service.setup("admin");
+        var enable = service.enable("admin", totpAtual(setup.secret()));
+        List<String> antigos = enable.backupCodes();
+
+        // Sem TOTP válido: rejeita
+        assertThat(service.regenerateBackupCodes("admin", "000000")).isEmpty();
+        assertThat(store.get("admin").getBackupCodesHashes()).hasSize(8); // inalterado
+
+        // Com TOTP válido: novos codes, antigos invalidados
+        List<String> novos = service.regenerateBackupCodes("admin", totpAtual(setup.secret()));
+        assertThat(novos).hasSize(8);
+        assertThat(novos).doesNotContainAnyElementsOf(antigos);
+
+        // Codes antigos não verificam mais
+        assertThat(service.verify("admin", antigos.get(0))).isFalse();
+        // Novos verificam
+        assertThat(service.verify("admin", novos.get(0))).isTrue();
+    }
+
+    @Test
     @DisplayName("disable() exige código de confirmação válido")
     void disableExigeCodigo() throws Exception {
         var setup = service.setup("admin");
-        String codigo = new DefaultCodeGenerator(HashingAlgorithm.SHA1, 6)
-                .generate(setup.secret(), Instant.now().getEpochSecond() / 30);
+        String codigo = totpAtual(setup.secret());
         service.enable("admin", codigo);
 
         assertThat(service.disable("admin", "000000")).isFalse();
@@ -113,16 +193,17 @@ class MfaServiceTest {
     }
 
     @Test
-    @DisplayName("estaHabilitado() reflete o ciclo de vida")
-    void estaHabilitadoCiclo() throws Exception {
-        assertThat(service.estaHabilitado("admin")).isFalse(); // sem setup
+    @DisplayName("estaHabilitado() + countBackupCodes() refletem o ciclo")
+    void estaHabilitadoECiclo() throws Exception {
+        assertThat(service.estaHabilitado("admin")).isFalse();
+        assertThat(service.countBackupCodesRemaining("admin")).isZero();
 
         var setup = service.setup("admin");
-        assertThat(service.estaHabilitado("admin")).isFalse(); // setup mas não enable
+        assertThat(service.estaHabilitado("admin")).isFalse();
+        assertThat(service.countBackupCodesRemaining("admin")).isZero();
 
-        String codigo = new DefaultCodeGenerator(HashingAlgorithm.SHA1, 6)
-                .generate(setup.secret(), Instant.now().getEpochSecond() / 30);
-        service.enable("admin", codigo);
+        service.enable("admin", totpAtual(setup.secret()));
         assertThat(service.estaHabilitado("admin")).isTrue();
+        assertThat(service.countBackupCodesRemaining("admin")).isEqualTo(8);
     }
 }

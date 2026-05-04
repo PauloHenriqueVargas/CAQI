@@ -4,8 +4,12 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "usuario_mfa")
@@ -35,9 +39,18 @@ public class UsuarioMfa {
     @Column(name = "ultima_validacao")
     private Instant ultimaValidacao;
 
+    /** Hashes SHA-256 dos backup codes ainda válidos (one-time-use). */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "backup_codes_hashes", columnDefinition = "jsonb")
+    private List<String> backupCodesHashes = new ArrayList<>();
+
+    @Column(name = "backup_codes_generated_at")
+    private Instant backupCodesGeneratedAt;
+
     @PrePersist
     void prePersist() {
         if (createdAt == null) createdAt = Instant.now();
         if (enabled == null) enabled = false;
+        if (backupCodesHashes == null) backupCodesHashes = new ArrayList<>();
     }
 }
