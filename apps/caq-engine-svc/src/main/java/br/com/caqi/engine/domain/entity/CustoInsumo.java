@@ -37,4 +37,8 @@ public class CustoInsumo {
 
     @Column(name = "vigencia_fim")
     private LocalDate vigenciaFim;
+
+    /** "minimo" (CAQi) | "adequado" (CAQ). Ver br.com.caqi.engine.domain.Perfil. */
+    @Column(nullable = false, length = 20)
+    private String perfil;
 }

@@ -51,13 +51,26 @@ Sprint 2.A (concluída):
 - [x] Endpoint `/api/v1/caqi/calculos` retorna `R$/aluno/ano` + memória de cálculo
 - [x] **Teste de regressão** (`CaqCalculatorRegressaoTest`): para EF1 em Escola A 2025, valida cada item da memória contra os 6 itens da planilha exemplo (PES-001=3.400, MOB-001=280, MAT-001=350, SER-001=100, TEC-001=6, MAN-001=33,33) + total agregado R$ 4.440,17 (com os 3 itens adicionais não listados na planilha exemplo)
 
-Sprint 2.B (próxima):
-- [ ] CRUD endpoints REST: `/api/v1/caqi/parametros`, `/api/v1/caqi/insumos`, `/api/v1/caqi/custos`
-- [ ] Indexação por SINAPI/IPCA aplicada ao custo vigente (reprecificação automática)
-- [ ] Distinção CAQi (mínimo) vs CAQ (adequado) — adicionar coluna `perfil` em `custo_insumo` ou catálogo paralelo
-- [ ] Endpoint GET `/api/v1/caqi/calculos/{id}` para histórico
-- [ ] Publicação de evento `caqi.calculo.executado` no RabbitMQ
-- [ ] Relatório oficial: PDF do cálculo com memória (springdoc + iText/openhtmltopdf)
+Sprint 2.B.i (concluída):
+- [x] V0003: ALTER custo_insumo ADD perfil (CHECK minimo|adequado) + índice (insumo, perfil, vigência)
+- [x] V0004: ALTER calculo_caq_item ADD perfil
+- [x] V9002 (dev/test seed): 9 custos para perfil='adequado' com valores ilustrativos (~50-180% maiores que minimo)
+- [x] CaqCalculator atualizado: itera os 2 perfis e devolve CAQi + CAQ + gap simultaneamente
+- [x] ItemMemoriaCalculoDto + CalculoCaqItem ganham campo `perfil`
+- [x] Test de regressão valida CAQi (R$ 4.440,17), CAQ (R$ 6.876,83) e gap (R$ 2.436,66) para EF1 em Escola A 2025
+- [x] CRUD endpoints REST com Springdoc:
+  - GET /api/v1/caqi/insumos · GET /{codigo} · POST · PUT
+  - GET /api/v1/caqi/insumos/{codigo}/custos · POST (cria nova vigência)
+  - GET /api/v1/caqi/parametros (vigentes) · GET /etapa/{etapaCodigo}
+  - GET /api/v1/caqi/calculos · GET /{id} (com memória completa)
+- [x] RestExceptionHandler global com RFC 7807 ProblemDetail (404, 400, validação)
+
+Sprint 2.B.ii (próxima):
+- [ ] POST/PUT em parametros/etapas (operação delicada — afeta cálculos retroativos)
+- [ ] Indexador SINAPI/IPCA: reprecifica custo aplicando IPCA acumulado da vigência até o ano de cálculo
+- [ ] Publicação de evento `caqi.calculo.executado` no RabbitMQ (consumido pelo compliance-svc)
+- [ ] Relatório oficial: PDF do cálculo com memória (openhtmltopdf)
+- [ ] Spring Security: RBAC mínimo (leitor, gestor, admin) em todos os endpoints CRUD
 
 ## Fase 3 — Fundeb/MDE + Validador (Sprint 3–4) — `caq-financeiro-svc`
 

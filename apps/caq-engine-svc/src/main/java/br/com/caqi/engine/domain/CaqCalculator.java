@@ -27,24 +27,25 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Motor de cálculo CAQ/CAQi — função pura sobre o estado do banco.
+ * Motor de cálculo CAQ/CAQi.
  *
- * Para cada (escola, etapa) na requisição:
- *   1. Carrega parâmetros vigentes da etapa (alunos_por_turma).
- *   2. Conta total de matrículas ativas na escola.
- *   3. Para cada insumo aplicável à etapa com custo vigente:
- *        custo_anual    = qtd_padrao × custo_unitario
- *        divisor        = 1 (por_aluno) | alunos_por_turma (por_turma) | total_alunos_escola (por_escola)
- *        custo_aluno_ano = custo_anual / divisor   (HALF_UP, scale 4)
- *   4. CAQi/aluno/ano = soma de todos os custo_aluno_ano (HALF_UP, scale 2 no agregado).
+ * Para cada (escola, etapa) na requisição, calcula DOIS valores:
+ *   - CAQi (perfil="minimo")  — piso mínimo de qualidade (PNE Meta 20)
+ *   - CAQ  (perfil="adequado") — padrão adequado de qualidade
+ * E o gap = CAQ − CAQi (R$/aluno/ano que falta para alcançar o adequado).
  *
- * NOTA Fase 3: a distinção CAQ adequado vs CAQi mínimo exigirá uma coluna 'perfil'
- * em custo_insumo (ou catálogo de insumos paralelo). Hoje CAQ = CAQi (mesmo valor).
+ * Algoritmo por insumo:
+ *   custo_anual    = qtd_padrao × custo_unitario_do_perfil
+ *   divisor        = 1 (por_aluno) | alunos_por_turma | total_alunos_escola
+ *   custo_aluno_ano = custo_anual / divisor   (HALF_UP, scale 4)
+ * Soma por perfil, arredonda HALF_UP scale 2 no agregado final.
  */
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class CaqCalculator {
+
+    private static final List<String> PERFIS = List.of(Perfil.MINIMO, Perfil.ADEQUADO);
 
     private final EtapaRepository etapaRepo;
     private final ParametroEtapaRepository parametroRepo;
@@ -74,52 +75,75 @@ public class CaqCalculator {
                                 "Sem parâmetros vigentes para etapa " + etapaCodigo + " em " + req.ano()));
 
                 BigDecimal totalCaqi = BigDecimal.ZERO;
+                BigDecimal totalCaq = BigDecimal.ZERO;
 
                 for (Insumo insumo : todosInsumos) {
                     if (!insumo.aplicaSeAEtapa(etapaCodigo)) continue;
 
-                    Optional<CustoInsumo> custoOpt = custoRepo.findVigente(insumo.getId(), dataReferencia);
-                    if (custoOpt.isEmpty()) {
-                        log.warn("Insumo {} sem custo vigente em {} — pulando", insumo.getCodigo(), req.ano());
-                        continue;
+                    for (String perfil : PERFIS) {
+                        Optional<CustoInsumo> custoOpt = custoRepo.findVigente(insumo.getId(), perfil, dataReferencia);
+                        if (custoOpt.isEmpty()) {
+                            // Para perfil 'adequado', a ausência é esperada se não houver dado;
+                            // para 'minimo' loga warning porque a planilha base sempre tem.
+                            if (Perfil.MINIMO.equals(perfil)) {
+                                log.warn("Insumo {} sem custo vigente perfil={} em {} — pulando",
+                                        insumo.getCodigo(), perfil, req.ano());
+                            }
+                            continue;
+                        }
+                        CustoInsumo custo = custoOpt.get();
+
+                        Calculado c = calcularContribuicao(
+                                escolaIdStr, etapaCodigo, perfil, insumo, custo, params, totalAlunosEscola);
+                        if (c == null) continue;
+
+                        memoria.add(c.memoria());
+                        if (Perfil.MINIMO.equals(perfil)) {
+                            totalCaqi = totalCaqi.add(c.custoAlunoAno());
+                        } else {
+                            totalCaq = totalCaq.add(c.custoAlunoAno());
+                        }
                     }
-                    CustoInsumo custo = custoOpt.get();
-
-                    BigDecimal custoAnual = insumo.getQtdPadrao().multiply(custo.getCustoUnitario());
-                    Divisor divisor = calcularDivisor(insumo, params, totalAlunosEscola, escolaIdStr);
-                    if (divisor == null) continue;
-
-                    BigDecimal custoAlunoAno = custoAnual.divide(divisor.valor(), 4, RoundingMode.HALF_UP);
-                    totalCaqi = totalCaqi.add(custoAlunoAno);
-
-                    String baseCalculo = String.format(
-                            "R$ %s × %s %s / %s = R$ %s/aluno/ano",
-                            custo.getCustoUnitario().toPlainString(),
-                            insumo.getQtdPadrao().toPlainString(),
-                            insumo.getUnidade(),
-                            divisor.descricao(),
-                            custoAlunoAno.toPlainString()
-                    );
-
-                    memoria.add(new ItemMemoriaCalculoDto(
-                            escolaIdStr, etapaCodigo,
-                            insumo.getCodigo(), insumo.getNome(), insumo.getTipoAplicacao(),
-                            insumo.getQtdPadrao(), custo.getCustoUnitario(),
-                            custoAnual, divisor.valor(), custoAlunoAno, baseCalculo
-                    ));
                 }
 
                 BigDecimal caqi = totalCaqi.setScale(2, RoundingMode.HALF_UP);
-                itens.add(new ItemResultadoDto(
-                        escolaIdStr, etapaCodigo,
-                        caqi,                     // CAQi
-                        caqi,                     // CAQ (Fase 3 — distinguir)
-                        BigDecimal.ZERO           // gap (Fase 3 — comparar com execução)
-                ));
+                BigDecimal caq  = totalCaq.setScale(2, RoundingMode.HALF_UP);
+                BigDecimal gap  = caq.subtract(caqi);
+
+                itens.add(new ItemResultadoDto(escolaIdStr, etapaCodigo, caqi, caq, gap));
             }
         }
 
         return new ResultadoCalculoDto(req.ano(), itens, memoria);
+    }
+
+    private record Calculado(BigDecimal custoAlunoAno, ItemMemoriaCalculoDto memoria) {}
+
+    private Calculado calcularContribuicao(
+            String escolaIdStr, String etapaCodigo, String perfil,
+            Insumo insumo, CustoInsumo custo, ParametroEtapa params, long totalAlunosEscola
+    ) {
+        BigDecimal custoAnual = insumo.getQtdPadrao().multiply(custo.getCustoUnitario());
+        Divisor divisor = calcularDivisor(insumo, params, totalAlunosEscola, escolaIdStr);
+        if (divisor == null) return null;
+
+        BigDecimal custoAlunoAno = custoAnual.divide(divisor.valor(), 4, RoundingMode.HALF_UP);
+        String baseCalculo = String.format(
+                "[%s] R$ %s × %s %s / %s = R$ %s/aluno/ano",
+                perfil,
+                custo.getCustoUnitario().toPlainString(),
+                insumo.getQtdPadrao().toPlainString(),
+                insumo.getUnidade(),
+                divisor.descricao(),
+                custoAlunoAno.toPlainString()
+        );
+
+        return new Calculado(custoAlunoAno, new ItemMemoriaCalculoDto(
+                escolaIdStr, etapaCodigo, perfil,
+                insumo.getCodigo(), insumo.getNome(), insumo.getTipoAplicacao(),
+                insumo.getQtdPadrao(), custo.getCustoUnitario(),
+                custoAnual, divisor.valor(), custoAlunoAno, baseCalculo
+        ));
     }
 
     private record Divisor(BigDecimal valor, String descricao) {}

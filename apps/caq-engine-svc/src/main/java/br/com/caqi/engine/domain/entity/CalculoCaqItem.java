@@ -36,6 +36,10 @@ public class CalculoCaqItem {
     @Column(name = "tipo_aplicacao", nullable = false, length = 15)
     private String tipoAplicacao;
 
+    /** "minimo" (entra no CAQi) | "adequado" (entra no CAQ). */
+    @Column(nullable = false, length = 20)
+    private String perfil;
+
     @Column(name = "qtd_aplicada", nullable = false, precision = 12, scale = 4)
     private BigDecimal qtdAplicada;
 

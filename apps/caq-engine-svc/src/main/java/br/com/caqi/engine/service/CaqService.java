@@ -95,6 +95,7 @@ public class CaqService {
             ci.setInsumoCodigo(m.insumoCodigo());
             ci.setInsumoNome(m.insumoNome());
             ci.setTipoAplicacao(m.tipoAplicacao());
+            ci.setPerfil(m.perfil());
             ci.setQtdAplicada(m.qtdAplicada());
             ci.setCustoUnitario(m.custoUnitario());
             ci.setCustoAnual(m.custoAnual());
