@@ -1,0 +1,46 @@
+{{- if .Values.networkPolicy.enabled }}
+{{- /* Isola este namespace: apenas pods do mesmo namespace + ingress controller podem entrar.
+       Saída livre (DNS, internet, banco externo). Endurecer em prod. */ -}}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "caqi.fullname" . }}-default-deny
+  labels:
+    {{- include "caqi.labels" . | nindent 4 }}
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    # Pods do mesmo namespace podem se comunicar entre si
+    - from:
+        - podSelector: {}
+    # Ingress controller (ajuste o namespace e label conforme seu cluster)
+    {{- with .Values.networkPolicy.ingressFromNamespaces }}
+    - from:
+        {{- range . }}
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ . | quote }}
+        {{- end }}
+    {{- end }}
+  egress:
+    # DNS (CoreDNS)
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    # Saída irrestrita para internet (bancos gerenciados, S3, OTEL collector externo)
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 169.254.0.0/16   # link-local (metadata)
+              - 10.0.0.0/8       # rede interna — restrinja conforme topologia
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+{{- end }}

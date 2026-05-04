@@ -149,6 +149,12 @@ auth:
     issuer: "https://sso.acesso.gov.br"
     existingSecret: "caqi-govbr"  # chaves: clientId, clientSecret
 
+# === NetworkPolicy ===
+networkPolicy:
+  enabled: true                   # default-deny + permit pod-to-pod no namespace
+  ingressFromNamespaces:
+    - ingress-nginx               # ajuste conforme o controller usado
+
 serviceAccount:
   create: true
   annotations: {}

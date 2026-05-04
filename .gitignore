@@ -2,12 +2,13 @@
 .gradle/
 build/
 out/
-!gradle/wrapper/gradle-wrapper.jar
 *.class
 *.jar
 *.war
 *.ear
 *.nar
+# Exceção: wrapper Gradle DEVE estar versionado (Apache 2.0, oficial)
+!gradle/wrapper/gradle-wrapper.jar
 hs_err_pid*
 replay_pid*
 .gradletasknamecache

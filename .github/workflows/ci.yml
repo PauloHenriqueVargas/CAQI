@@ -1,0 +1,161 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ──────────────────────────────────────────────────────────────────────
+  java:
+    name: Java — build & test
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup JDK 21 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@v4
+
+      - name: Build (compile + test)
+        run: ./gradlew build --scan
+        env:
+          # Testcontainers usa o socket Docker do runner Ubuntu
+          TESTCONTAINERS_RYUK_DISABLED: "true"
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: |
+            apps/*/build/reports/tests/**
+            apps/*/build/test-results/**
+
+  # ──────────────────────────────────────────────────────────────────────
+  web:
+    name: Web — lint, type-check, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install
+        run: npm ci --no-audit --prefer-offline || npm install --no-audit
+        # fallback para `npm install` enquanto o lockfile não está commitado
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        run: npm run type-check
+
+      - name: Build
+        run: npm run build
+        env:
+          CAQ_ENGINE_URL: http://localhost:8081
+          CAQ_FINANCEIRO_URL: http://localhost:8082
+          CAQ_ESCOLAR_URL: http://localhost:8083
+          CAQ_COMPLIANCE_URL: http://localhost:8084
+          NEXTAUTH_SECRET: ci_dummy_secret_not_for_production_use_only
+          NEXTAUTH_URL: http://localhost:3000
+
+  # ──────────────────────────────────────────────────────────────────────
+  helm:
+    name: Helm — lint & template
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.16.1
+
+      - name: Lint chart
+        run: helm lint charts/caqi
+
+      - name: Template (default values)
+        run: helm template caqi-test charts/caqi --debug
+
+      - name: Template (município exemplo)
+        run: helm template caqi-municipio-exemplo charts/caqi -f charts/caqi/values-municipio-exemplo.yaml --debug
+
+  # ──────────────────────────────────────────────────────────────────────
+  openapi:
+    name: OpenAPI — validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Redocly CLI
+        run: npm install -g @redocly/cli@1.25.5
+
+      - name: Validate OpenAPI
+        run: redocly lint openapi/caqi-openapi.yaml
+
+  # ──────────────────────────────────────────────────────────────────────
+  hygiene:
+    name: Repo hygiene
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verifica LICENSE presente e proprietária
+        run: |
+          test -f LICENSE
+          grep -q "PROPRIETARY AND CONFIDENTIAL" LICENSE
+          grep -q "Controller — Consultoria & Assessoria" LICENSE
+
+      - name: Verifica que .env / segredos não foram commitados
+        run: |
+          set -e
+          if git ls-files | grep -E '(^|/)\.env$|(^|/)\.env\.[^.]*$' | grep -v '\.env\.example' | grep -v '\.env\.local\.example'; then
+            echo "ERRO: arquivo .env commitado"; exit 1
+          fi
+
+      - name: Verifica que arquivos > 5 MB não foram adicionados (exceto refs)
+        run: |
+          large=$(git ls-files | xargs -I{} wc -c {} 2>/dev/null | awk '$1 > 5242880 && $2 !~ /^docs\/references\// {print $2 " " $1}')
+          if [ -n "$large" ]; then
+            echo "ERRO: arquivos > 5 MB fora de docs/references/:"; echo "$large"; exit 1
+          fi

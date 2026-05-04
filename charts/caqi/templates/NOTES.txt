@@ -1,0 +1,24 @@
+{{ include "caqi.fullname" . }} foi instalado no namespace {{ .Release.Namespace }}.
+
+Tenant (município): {{ .Values.tenant.municipioNome }} ({{ .Values.tenant.municipioId }} / {{ .Values.tenant.uf }})
+
+Serviços expostos:
+{{- range $svc, $cfg := .Values.services }}
+{{- if $cfg.enabled }}
+  - {{ $svc }} → http://{{ include "caqi.fullname" $ }}-{{ $svc }}:{{ $cfg.port }}
+{{- end }}
+{{- end }}
+
+{{- if .Values.ingress.enabled }}
+
+URL público:
+{{- range .Values.ingress.hosts }}
+  https://{{ .host }}
+{{- end }}
+{{- end }}
+
+Próximos passos:
+1. Verifique se as Secrets existem ({{ .Values.postgresql.external.existingSecret }}, {{ .Values.rabbitmq.external.existingSecret }}{{ if .Values.auth.govbr.enabled }}, {{ .Values.auth.govbr.existingSecret }}{{ end }}).
+2. Aplique o backup CronJob (ainda não no chart — Fase 9).
+3. Acompanhe os deploys: kubectl -n {{ .Release.Namespace }} get pods -l app.kubernetes.io/instance={{ .Release.Name }}
+4. Logs: kubectl -n {{ .Release.Namespace }} logs -l app.kubernetes.io/component=engine --tail 100

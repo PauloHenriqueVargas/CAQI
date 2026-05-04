@@ -1,0 +1,76 @@
+{{- if .Values.services.financeiro.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "caqi.fullname" . }}-financeiro
+  labels:
+    {{- include "caqi.labels" . | nindent 4 }}
+    app.kubernetes.io/component: financeiro
+spec:
+  replicas: {{ .Values.services.financeiro.replicas }}
+  selector:
+    matchLabels:
+      {{- include "caqi.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: financeiro
+  template:
+    metadata:
+      labels:
+        {{- include "caqi.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: financeiro
+    spec:
+      serviceAccountName: {{ include "caqi.fullname" . }}
+      securityContext: {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: financeiro
+          image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}/caq-financeiro-svc:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext: {{- toYaml .Values.securityContext | nindent 12 }}
+          ports:
+            - containerPort: {{ .Values.services.financeiro.port }}
+              name: http
+          envFrom:
+            - configMapRef:
+                name: {{ include "caqi.fullname" . }}-env
+          env:
+            - name: SERVER_PORT
+              value: "{{ .Values.services.financeiro.port }}"
+            - name: OTEL_SERVICE_NAME
+              value: caq-financeiro-svc
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.postgresql.external.existingSecret }}
+                  key: {{ .Values.postgresql.external.existingSecretKey }}
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.rabbitmq.external.existingSecret }}
+                  key: {{ .Values.rabbitmq.external.existingSecretKey }}
+          livenessProbe:
+            httpGet: { path: /actuator/health/liveness, port: http }
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet: { path: /actuator/health/readiness, port: http }
+            initialDelaySeconds: 15
+            periodSeconds: 5
+          resources: {{- toYaml .Values.services.financeiro.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "caqi.fullname" . }}-financeiro
+  labels:
+    {{- include "caqi.labels" . | nindent 4 }}
+    app.kubernetes.io/component: financeiro
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.services.financeiro.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "caqi.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: financeiro
+{{- end }}

@@ -35,6 +35,8 @@ Dockerfile   text eol=lf
 *.ico        binary
 *.zip        binary
 *.tar.gz     binary
+*.jar        binary
+*.war        binary
 *.parquet    binary
 *.duckdb     binary
 *.sqlite     binary
@@ -44,6 +46,14 @@ Dockerfile   text eol=lf
 *.woff2      binary
 *.ttf        binary
 *.eot        binary
+
+# Scripts shell — devem manter LF mesmo no Windows
+gradlew      text eol=lf
+*.sh         text eol=lf
+
+# Scripts Windows — manter CRLF
+*.bat        text eol=crlf
+*.cmd        text eol=crlf
 
 # GitHub Linguist hints
 docs/references/** linguist-vendored

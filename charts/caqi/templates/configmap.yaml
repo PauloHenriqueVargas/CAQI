@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "caqi.fullname" . }}-env
+  labels:
+    {{- include "caqi.labels" . | nindent 4 }}
+data:
+  SPRING_PROFILES_ACTIVE: "prod"
+  CAQI_MUNICIPIO_ID: {{ .Values.tenant.municipioId | quote }}
+  CAQI_MUNICIPIO_NOME: {{ .Values.tenant.municipioNome | quote }}
+  CAQI_MUNICIPIO_UF: {{ .Values.tenant.uf | quote }}
+  DATABASE_URL: "jdbc:postgresql://{{ .Values.postgresql.external.host }}:{{ .Values.postgresql.external.port }}/{{ .Values.postgresql.external.database }}"
+  DATABASE_USER: {{ .Values.postgresql.external.username | quote }}
+  RABBITMQ_HOST: {{ .Values.rabbitmq.external.host | quote }}
+  RABBITMQ_PORT: {{ .Values.rabbitmq.external.port | quote }}
+  RABBITMQ_VHOST: {{ .Values.rabbitmq.external.vhost | quote }}
+  RABBITMQ_USER: {{ .Values.rabbitmq.external.username | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.observability.otelCollector.endpoint | quote }}
+  CAQI_COMPLIANCE_FUNDEB_70: {{ .Values.compliance.enforceFundeb70 | quote }}
+  CAQI_COMPLIANCE_VAAT_15: {{ .Values.compliance.enforceVaat15 | quote }}
+  CAQI_COMPLIANCE_MDE_25: {{ .Values.compliance.enforceMde25 | quote }}
