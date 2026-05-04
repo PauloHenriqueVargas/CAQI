@@ -112,6 +112,29 @@ compliance:
   enforceVaat15: true
   enforceMde25: true
 
+# === Backup PostgreSQL (CronJob diário pg_dump → S3 com KMS) ===
+backup:
+  enabled: false                    # ligar em prod; ver docs/operacao/BACKUP_RESTORE.md
+  schedule: "0 2 * * *"             # 02:00 UTC diário
+  image:
+    # Imagem deve conter pg_dump (postgres) + aws CLI. Construir custom OU usar
+    # public.ecr.aws/aws-cli/aws-cli:latest e instalar postgresql-client.
+    repository: ghcr.io/caqi/pg-aws
+    tag: "16-alpine"
+    pullPolicy: IfNotPresent
+  retention:
+    diario: 30                      # política aplicada via S3 Lifecycle (não no CronJob)
+    mensal: 12
+    anual:  7
+  destination:
+    type: s3                        # s3 | minio
+    bucket: ""                      # ex.: caqi-municipio-exemplo-backups
+    region: "sa-east-1"
+    kmsKeyId: ""                    # ex.: arn:aws:kms:sa-east-1:000:key/...
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits:   { cpu: 500m, memory: 512Mi }
+
 # === Ingress ===
 ingress:
   enabled: true

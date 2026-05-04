@@ -244,12 +244,24 @@ Sprint 8.B (próxima):
 
 ## Fase 9 — Hardening produção
 
-- [ ] Auth Gov.br OAuth2 (NextAuth provider customizado + JWT trust no backend)
-- [ ] MFA TOTP
-- [ ] Spring Security em todos os controllers (RBAC)
-- [ ] mTLS entre serviços (Istio/Linkerd, opcional)
-- [ ] Pen-test interno
-- [ ] DPIA / RIPD (LGPD) documentados
+**Status: ⏳ Em andamento.**
+
+Sprint 9.A (concluída) — Documentação LGPD/operacional + backup CronJob:
+- [x] **DPIA/RIPD** (`docs/legal/DPIA_RIPD.md`) — Relatório de Impacto à Proteção de Dados em 10 seções: agentes (controlador=município, operador=Controller, DPO a designar), descrição do tratamento, categorias de dados (incluindo PII de menor de idade no aluno), finalidades+base legal, compartilhamento, retenção (30 anos folha, 5 anos demais), 7 riscos identificados com mitigações já implementadas, direitos do titular, decisões automatizadas (bloqueador empenho, notificações)
+- [x] **ROPA** (`docs/legal/ROPA.md`) — Registro de 6 operações de tratamento (matrícula, folha, fornecedor, usuário, log_auditoria, ROPA meta) com base legal+retenção+segurança+direitos por operação
+- [x] **Política de Privacidade modelo** (`docs/legal/POLITICA_PRIVACIDADE.md`) — em linguagem clara conforme LGPD art. 9°§1°, pronta para customização pelo município
+- [x] **Runbook operacional** (`docs/operacao/RUNBOOK.md`) — 9 sintomas comuns (5xx, deploy travado, postgres down, RabbitMQ congestionado, validador Fundeb, cadeia auditoria quebrada, SIOPE pendências, TLS, incidente LGPD) com diagnóstico+mitigação
+- [x] **Backup/Restore** (`docs/operacao/BACKUP_RESTORE.md`) — estratégia em 3 camadas (pg_dump diário, WAL contínuo, snapshot), RPO/RTO alvo, procedimento step-by-step de restauração, drill mensal obrigatório
+- [x] **Hardening checklist** (`docs/operacao/HARDENING_PRODUCAO.md`) — 12 seções de pré-condições para go-live: segredos, RBAC, rede, BD, auditoria, observabilidade, compliance, deploy, DR, docs, pen-test, validação funcional + aprovações finais
+- [x] **CronJob backup Helm** (`charts/caqi/templates/cronjob-backup.yaml`): pg_dump comprimido + upload S3 com KMS encryption; configurável via `values.yaml/backup.*`; emptyDir tmp 5Gi; rodando como user 1000 read-only-rootfs; concurrencyPolicy=Forbid
+- [x] `values.yaml` ganha seção `backup` com schedule, retention, destination (s3/minio), resources
+
+Sprint 9.B (próxima):
+- [ ] Auth Gov.br OAuth2 (NextAuth provider customizado + Spring Resource Server validando JWT)
+- [ ] MFA TOTP para usuários ADMIN
+- [ ] mTLS entre serviços (Istio/Linkerd) — opcional
+- [ ] Pen-test interno (OWASP Top 10, IDOR)
+- [ ] Trigger de proteção em log_auditoria (revoke UPDATE/DELETE) — defesa em profundidade da cadeia SHA-256
 - [ ] Disaster recovery + backups (pg_dump → S3 com KMS)
 - [ ] Documentação de operação (runbook por incidente)
 

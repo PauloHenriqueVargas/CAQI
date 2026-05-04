@@ -1,0 +1,92 @@
+{{- if .Values.backup.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "caqi.fullname" . }}-pg-backup
+  labels:
+    {{- include "caqi.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backup
+spec:
+  schedule: {{ .Values.backup.schedule | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 7
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            {{- include "caqi.selectorLabels" . | nindent 12 }}
+            app.kubernetes.io/component: backup
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: {{ include "caqi.fullname" . }}
+          securityContext:
+            {{- toYaml .Values.podSecurityContext | nindent 12 }}
+          containers:
+            - name: pgdump
+              image: "{{ .Values.backup.image.repository }}:{{ .Values.backup.image.tag }}"
+              imagePullPolicy: {{ .Values.backup.image.pullPolicy | default "IfNotPresent" }}
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                runAsUser: 1000
+                capabilities:
+                  drop: ["ALL"]
+              env:
+                - name: PGHOST
+                  value: {{ .Values.postgresql.external.host | quote }}
+                - name: PGPORT
+                  value: {{ .Values.postgresql.external.port | quote }}
+                - name: PGDATABASE
+                  value: {{ .Values.postgresql.external.database | quote }}
+                - name: PGUSER
+                  value: {{ .Values.postgresql.external.username | quote }}
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.postgresql.external.existingSecret }}
+                      key: {{ .Values.postgresql.external.existingSecretKey }}
+                - name: BACKUP_BUCKET
+                  value: {{ .Values.backup.destination.bucket | quote }}
+                - name: AWS_REGION
+                  value: {{ .Values.backup.destination.region | quote }}
+                - name: KMS_KEY_ID
+                  value: {{ .Values.backup.destination.kmsKeyId | quote }}
+                - name: TENANT_ID
+                  value: {{ .Values.tenant.municipioId | quote }}
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -euo pipefail
+                  TIMESTAMP=$(date -u +%Y-%m-%dT%H-%M)
+                  FILE="caqi-${TENANT_ID}-${TIMESTAMP}.dump"
+
+                  echo "→ pg_dump → /tmp/${FILE}"
+                  pg_dump -Fc --no-owner --no-acl --verbose --file=/tmp/${FILE}
+
+                  echo "→ Tamanho do dump:"
+                  ls -lh /tmp/${FILE}
+
+                  echo "→ Upload S3 com KMS"
+                  aws s3 cp /tmp/${FILE} s3://${BACKUP_BUCKET}/${TENANT_ID}/${FILE} \
+                    --sse aws:kms \
+                    --sse-kms-key-id ${KMS_KEY_ID} \
+                    --metadata "tenant=${TENANT_ID},timestamp=${TIMESTAMP},source=cronjob"
+
+                  echo "→ Backup OK: s3://${BACKUP_BUCKET}/${TENANT_ID}/${FILE}"
+
+                  # Limpa locais
+                  rm -f /tmp/${FILE}
+              volumeMounts:
+                - name: tmp
+                  mountPath: /tmp
+              resources:
+                {{- toYaml .Values.backup.resources | nindent 16 }}
+          volumes:
+            - name: tmp
+              emptyDir:
+                sizeLimit: 5Gi
+{{- end }}
