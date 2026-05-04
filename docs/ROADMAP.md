@@ -36,19 +36,28 @@ Sprint 1.B (próximo commit):
 
 **Definition of Done da Fase 1:** `docker compose up --build` sobe tudo; cada serviço responde 200 em `/api/v1/health` e `/actuator/health`; Next.js renderiza em http://localhost:3000; Flyway aplica V0001 sem erro; CI verde no PR de smoke test.
 
-## Fase 2 — Motor CAQ/CAQi (Sprint 2–3)
+## Fase 2 — Motor CAQ/CAQi
 
-Objetivo: cálculo CAQi e CAQ por etapa/escola/ano com memórias de cálculo auditáveis.
+**Status: ⏳ Em andamento.**
 
-- [ ] Migrations adicionais: tabelas `calculo_caq_item` (memória de cálculo), `perfil_qualidade` (minimo/adequado), `custo_insumo_perfil` (custo por perfil)
-- [ ] CRUD parâmetros por etapa/modalidade (`/api/v1/caqi/parametros`)
-- [ ] CRUD insumos e custos com vigência (`/api/v1/caqi/insumos`, `/api/v1/caqi/custos`)
-- [ ] Implementação real do `CaqCalculator`: matriz Insumo→Custo anualizada, por escola, por ano
-- [ ] Indexação por SINAPI/IPCA (modelo `indice_preco`)
-- [ ] Endpoint `/api/v1/caqi/calculos` retorna `R$/aluno/ano` + memória de cálculo (lista item-a-item)
-- [ ] Persistência do cálculo em `calculo_caq` para histórico
-- [ ] Relatório oficial: PDF + JSON com memória de cálculo
-- [ ] **Teste de regressão:** comparar com `docs/references/Planilha_Base_CAQi_Preenchida.xlsx` (resultado bate ±0,5%)
+Sprint 2.A (concluída):
+- [x] Migration V0002: adiciona `insumo.qtd_padrao` + tabela `calculo_caq_item` (memória) + índices
+- [x] Migration V9001 (dev/test only, em `db/seed/`): seed do golden dataset da planilha — 6 etapas, 9 insumos com custos vigentes, 3 escolas, 1.250 matrículas, índices IPCA/SINAPI 2025
+- [x] Locations Flyway profile-aware: `application-dev.yml` e `application-test.yml` carregam `db/migration` + `db/seed`
+- [x] JPA entities (8): Etapa, ParametroEtapa, Insumo, CustoInsumo, Escola, Matricula, CalculoCaq, CalculoCaqItem
+- [x] Repositories Spring Data com queries JPQL para vigência e contagem de matrículas
+- [x] **Implementação real do `CaqCalculator`** — matriz Insumo→Custo anualizada com 3 modos (`por_aluno`/`por_turma`/`por_escola`), validação de vigência, memória item-a-item
+- [x] `CaqService` persiste resultado em `calculo_caq` + itens em `calculo_caq_item`; idempotente (substitui cálculo anterior do mesmo trio escola+etapa+ano)
+- [x] Endpoint `/api/v1/caqi/calculos` retorna `R$/aluno/ano` + memória de cálculo
+- [x] **Teste de regressão** (`CaqCalculatorRegressaoTest`): para EF1 em Escola A 2025, valida cada item da memória contra os 6 itens da planilha exemplo (PES-001=3.400, MOB-001=280, MAT-001=350, SER-001=100, TEC-001=6, MAN-001=33,33) + total agregado R$ 4.440,17 (com os 3 itens adicionais não listados na planilha exemplo)
+
+Sprint 2.B (próxima):
+- [ ] CRUD endpoints REST: `/api/v1/caqi/parametros`, `/api/v1/caqi/insumos`, `/api/v1/caqi/custos`
+- [ ] Indexação por SINAPI/IPCA aplicada ao custo vigente (reprecificação automática)
+- [ ] Distinção CAQi (mínimo) vs CAQ (adequado) — adicionar coluna `perfil` em `custo_insumo` ou catálogo paralelo
+- [ ] Endpoint GET `/api/v1/caqi/calculos/{id}` para histórico
+- [ ] Publicação de evento `caqi.calculo.executado` no RabbitMQ
+- [ ] Relatório oficial: PDF do cálculo com memória (springdoc + iText/openhtmltopdf)
 
 ## Fase 3 — Fundeb/MDE + Validador (Sprint 3–4) — `caq-financeiro-svc`
 
