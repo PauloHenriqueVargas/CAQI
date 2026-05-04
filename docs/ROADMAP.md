@@ -216,13 +216,31 @@ Sprint 7.B (próxima):
 - [ ] Simulações pré-definidas (presets): "tempo integral universal", "−5 alunos/turma EF", "+1 escola creche"
 - [ ] Cenários comparativos (3+ simulações lado-a-lado)
 
-## Fase 8 — Frontend admin completo (paralelo às fases 2–7) — `web`
+## Fase 8 — Frontend admin completo
 
-- [ ] Auth NextAuth + sessões
-- [ ] Dashboards executivos (prefeito/secretário) com Recharts
-- [ ] Telas operacionais por escola
-- [ ] Acessibilidade WCAG 2.1 AA (auditoria com axe-core)
-- [ ] i18n se necessário (default pt-BR)
+**Status: ⏳ Em andamento.**
+
+Sprint 8.A (concluída) — Auth + BFF + 4 telas operacionais:
+- [x] **NextAuth v4** com CredentialsProvider que valida usuário/senha contra Basic Auth do caq-engine-svc; armazena credencial Basic no JWT da sessão (TTL 8h)
+- [x] **lib/api-client.ts** (server-only): wrapper `fetchService<T>(svc, path)` que pega Basic da sessão e propaga como header — Server Components e Route Handlers chamam livremente
+- [x] **middleware.ts**: protege todas as rotas exceto `/login`, `/api/auth`, `/api/health` e assets — empurra para `/login?callbackUrl=...`
+- [x] **app/login/page.tsx** — formulário com tratamento de erro
+- [x] **app/(authenticated)/layout.tsx** — header brand + nav + footer com bases legais
+- [x] **/dashboard** — KPIs (CAQi médio, gap, notificações abertas), 3 gauges das vinculações (MDE/Fundeb/VAAT) com indicador cumpre/não-cumpre, lista de alertas em aberto. Resiliente a falha parcial.
+- [x] **/calculos** — tabela de cálculos persistidos com link para detalhe
+- [x] **/calculos/[id]** — memória item-a-item separada por perfil (CAQi mínimo / CAQ adequado)
+- [x] **/fundeb** — gauges + agregados de receitas/despesas + glossário
+- [x] **/notificacoes** — lista filtrada por status (aberta/em_analise/resolvida/ignorada) com cor por severidade
+- [x] Componentes: `Card`, `StatNumber`, `Gauge`, `SignOutButton`
+- [x] `lib/types.ts` — types TS dos DTOs Java + helpers fmt.money/percent/date pt-BR
+- [x] App Router groups: `(authenticated)` agrupa rotas autenticadas
+
+Sprint 8.B (próxima):
+- [ ] Forms para POST: criar receita/despesa, registrar medição, executar cálculo CAQ
+- [ ] Tela de simulação (`/simulacoes/nova`) com inputs para overrides e tabela comparativa
+- [ ] Telas de fornecedores e contratos
+- [ ] Acessibilidade WCAG 2.1 AA — auditoria com axe-core no CI
+- [ ] Tests E2E com Playwright (login → dashboard → cálculo → notificação)
 
 ## Fase 9 — Hardening produção
 
