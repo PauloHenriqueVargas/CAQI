@@ -62,14 +62,17 @@ public class SecurityConfig {
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        // Estrutural: ADMIN
+                        // Estrutural: ADMIN (catálogos + contratos têm impacto auditorial)
                         .requestMatchers(HttpMethod.PUT,    "/api/v1/financeiro/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/financeiro/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST,   "/api/v1/financeiro/fontes-recurso/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST,   "/api/v1/financeiro/contratos").hasRole("ADMIN")
 
                         // Operacional: GESTOR
                         .requestMatchers(HttpMethod.POST,   "/api/v1/financeiro/receitas/**").hasRole("GESTOR")
                         .requestMatchers(HttpMethod.POST,   "/api/v1/financeiro/despesas/**").hasRole("GESTOR")
+                        .requestMatchers(HttpMethod.POST,   "/api/v1/financeiro/fornecedores/**").hasRole("GESTOR")
+                        .requestMatchers(HttpMethod.POST,   "/api/v1/financeiro/contratos/*/medicoes/**").hasRole("GESTOR")
                         .requestMatchers(HttpMethod.POST,   "/api/v1/tributario/**").hasRole("GESTOR")
 
                         // Consulta: LEITOR

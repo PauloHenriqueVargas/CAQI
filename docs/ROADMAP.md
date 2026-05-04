@@ -134,12 +134,21 @@ Sprint 4.A (concluída) — Motor de Retenções:
 - [x] SecurityConfig: + RBAC para /api/v1/tributario/**
 - [x] MotorRetencoesTest: 5 cenários (não-optante GERAL R$10k, com cessão MO, Simples só ISS, valor abaixo limite PCC, sem alíquota ISS)
 
-Sprint 4.B (próxima) — Compras/Contratos Lei 14.133:
-- [ ] JPA entities Fornecedor, Contrato, MedicaoContrato (sobre tabelas existentes em V0001)
-- [ ] CRUD básico /api/v1/financeiro/fornecedores e /contratos e /contratos/{id}/medicoes
-- [ ] Integração com retenções: medição contratual aciona MotorRetencoes para gerar guia de pagamento
-- [ ] (Defer 4.C) ETP, TR, matriz de risco — anexos JSONB
-- [ ] (Defer 4.C) Cliente HTTP para PNCP (publicação automática)
+Sprint 4.B (concluída) — Compras/Contratos Lei 14.133:
+- [x] JPA entities Fornecedor, Contrato, MedicaoContrato (sobre tabelas existentes em V0001)
+- [x] CRUD endpoints REST com Springdoc + RBAC declarativo:
+  - GET / GET /{id} / POST / PUT /api/v1/financeiro/fornecedores (POST GESTOR; PUT ADMIN)
+  - GET / GET /{id} / POST /api/v1/financeiro/contratos (POST ADMIN — estrutural)
+  - GET / POST /api/v1/financeiro/contratos/{id}/medicoes (POST GESTOR — operacional)
+- [x] Modalidade Lei 14.133 validada via @Pattern (PREGAO_ELETRONICO, CONCORRENCIA, DISPENSA, INEXIGIBILIDADE, DIALOGO_COMPETITIVO, CONCURSO, LEILAO)
+- [x] **MedicaoComRetencaoService**: ao registrar medição, se tipoServico+aliquotaIssMunicipal informados, chama MotorRetencoes usando `optanteSimples` do fornecedor (fonte única) e devolve `MedicaoComRetencoesDto` com preview de retenções para emissão da guia (não persiste retenção)
+- [x] MedicaoComRetencaoServiceTest unit (Mockito): 4 cenários — sem params (não calcula), não-optante (1115 retido), Simples (500 só ISS), contrato inexistente (404)
+
+Sprint 4.C (próxima — defer):
+- [ ] ETP, TR, matriz de risco como anexos JSONB no contrato
+- [ ] Cliente HTTP para PNCP (publicação automática + sincronização de status)
+- [ ] Persistência da retenção em retencao_tributaria quando despesa é paga
+- [ ] Validador de saldo contratual (impede medição que estoura valor_global)
 
 ## Fase 5 — SIOPE Connector + Censo (Sprint 5–6) — `caq-compliance-svc`
 
