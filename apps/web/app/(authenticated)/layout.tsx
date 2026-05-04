@@ -5,6 +5,7 @@ import { SignOutButton } from '@/components/SignOutButton';
 const NAV_ITEMS = [
   { href: '/dashboard',    label: 'Dashboard' },
   { href: '/calculos',     label: 'Cálculos CAQ' },
+  { href: '/simulacoes',   label: 'Simulações' },
   { href: '/fundeb',       label: 'Fundeb / MDE' },
   { href: '/notificacoes', label: 'Notificações' },
 ];

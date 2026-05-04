@@ -235,10 +235,18 @@ Sprint 8.A (concluída) — Auth + BFF + 4 telas operacionais:
 - [x] `lib/types.ts` — types TS dos DTOs Java + helpers fmt.money/percent/date pt-BR
 - [x] App Router groups: `(authenticated)` agrupa rotas autenticadas
 
-Sprint 8.B (próxima):
-- [ ] Forms para POST: criar receita/despesa, registrar medição, executar cálculo CAQ
-- [ ] Tela de simulação (`/simulacoes/nova`) com inputs para overrides e tabela comparativa
-- [ ] Telas de fornecedores e contratos
+Sprint 8.B (parcial — concluída):
+- [x] **Form de cálculo CAQ** (`/calculos/novo`) — Server Action `criarCalculo` com `useActionState`, valida campos, traduz erros do backend. Botão "+ Novo cálculo" no header da lista.
+- [x] **Simulador "e se?" UI** (`/simulacoes` + `/simulacoes/nova`):
+  - Página landing com cenários típicos
+  - Form client component com inputs para ano, escola, etapa, override de alunos/turma, override de custo (insumo + multiplicador)
+  - BFF route handler `/api/simular` proxy para `/api/v1/caqi/simulacoes`
+  - Tabela comparativa com CAQi atual/simulado/Δ + CAQ atual/simulado/Δ + Δ%; cores semânticas (vermelho=aumento, verde=redução)
+- [x] Componentes form reutilizáveis: `Field`, `Select`, `FormCard`, `ErrorBanner`, `SubmitButton` (com `useFormStatus`)
+- [x] Nav atualizado: + Simulações
+
+Sprint 8.B (restante — defer):
+- [ ] Forms para receitas, despesas, contratos e medições
 - [ ] Acessibilidade WCAG 2.1 AA — auditoria com axe-core no CI
 - [ ] Tests E2E com Playwright (login → dashboard → cálculo → notificação)
 

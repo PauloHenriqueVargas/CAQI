@@ -11,13 +11,21 @@ export default async function CalculosPage() {
 
   return (
     <div>
-      <header className="mb-6">
-        <h1 className="text-2xl font-bold">Cálculos CAQ/CAQi</h1>
-        <p className="text-sm text-slate-500">
-          {calculos.length === 0
-            ? 'Nenhum cálculo persistido ainda. Execute um POST /api/v1/caqi/calculos para gerar.'
-            : `${calculos.length} cálculos persistidos.`}
-        </p>
+      <header className="mb-6 flex items-baseline justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Cálculos CAQ/CAQi</h1>
+          <p className="text-sm text-slate-500">
+            {calculos.length === 0
+              ? 'Nenhum cálculo persistido ainda.'
+              : `${calculos.length} cálculos persistidos.`}
+          </p>
+        </div>
+        <Link
+          href="/calculos/novo"
+          className="rounded bg-brand px-4 py-2 text-sm font-semibold text-brand-fg hover:bg-brand/90"
+        >
+          + Novo cálculo
+        </Link>
       </header>
 
       {calculos.length > 0 && (
