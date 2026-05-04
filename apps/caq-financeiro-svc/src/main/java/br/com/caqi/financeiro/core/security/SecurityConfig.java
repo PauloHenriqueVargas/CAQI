@@ -79,6 +79,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET,    "/api/v1/financeiro/**").hasRole("LEITOR")
                         .requestMatchers(HttpMethod.GET,    "/api/v1/fundeb/**").hasRole("LEITOR")
                         .requestMatchers(HttpMethod.GET,    "/api/v1/tributario/**").hasRole("LEITOR")
+                        .requestMatchers(HttpMethod.GET,    "/api/v1/siope/**").hasRole("LEITOR")
 
                         .anyRequest().authenticated()
                 )

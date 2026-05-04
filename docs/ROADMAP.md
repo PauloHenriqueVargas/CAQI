@@ -150,13 +150,28 @@ Sprint 4.C (próxima — defer):
 - [ ] Persistência da retenção em retencao_tributaria quando despesa é paga
 - [ ] Validador de saldo contratual (impede medição que estoura valor_global)
 
-## Fase 5 — SIOPE Connector + Censo (Sprint 5–6) — `caq-compliance-svc`
+## Fase 5 — SIOPE Connector + Censo
 
-- [ ] ETL Censo Escolar/INEP (download anual + import)
-- [ ] Pré-preenchimento SIOPE com dados consolidados
-- [ ] Validador de pendências
-- [ ] Endpoints `/api/v1/siope/export` e `/siope/status`
-- [ ] Analytics layer: dbt em `analytics/` (DuckDB → Postgres) para reports cruzados
+**Status: ⏳ Em andamento.**
+
+Sprint 5.A (concluída) — SIOPE export consolidado em `caq-financeiro-svc`:
+- [x] **SiopeService.gerar(ano)**: agrega receitas por origem + despesas por (siope_grupo, fonte_recurso, classe pessoal/capital/outras), monta vinculações via FundebService, detecta pendências (receita sem origem/PCASP, despesa sem siope_grupo/natureza/fonte, capital fora de VAAT como info)
+- [x] DTOs: SiopeExportDto + ReceitasResumo + DespesasResumo + Vinculacoes + VinculacaoDetalhe + SiopePendenciaDto
+- [x] Endpoints REST com Springdoc + RBAC LEITOR:
+  - GET /api/v1/siope/export?ano=N → quadro completo
+  - GET /api/v1/siope/status?ano=N → apenas pendências (subset)
+- [x] SiopeServiceTest unit (Mockito): 2 cenários — cenário-base seed (260k MDE / 230k pessoal / 10k capital, zero pendências) e cenário com falhas de classificação (5 pendências detectadas com severidades corretas)
+- [x] Limitação documentada: FNDE não tem API pública para upload — service produz JSON; conversão para layout DFCD/MIM-CC fica para 5.D se necessário
+
+Sprint 5.B (próxima — defer):
+- [ ] Censo Escolar/INEP — cliente HTTP para download do arquivo anual + parser CSV/XLS
+- [ ] Import para escolas/matriculas no caq-escolar-svc
+- [ ] Sincronização com cálculo CAQ (engine recalcula quando matrículas atualizam)
+
+Sprint 5.C (próxima — defer):
+- [ ] Analytics layer dbt — modelos staging/intermediate/marts em `analytics/`
+- [ ] Marts: caq_aluno_ano, fundeb_execucao_mensal, transparencia_lai
+- [ ] Orquestração via Dagster ou cron simples
 
 ## Fase 6 — Transparência/LAI (Sprint 6) — `caq-compliance-svc` + `web`
 
