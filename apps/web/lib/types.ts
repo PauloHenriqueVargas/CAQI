@@ -102,6 +102,70 @@ export interface MfaBackupCodesResponseDto {
   backupCodes: string[];
 }
 
+export interface FornecedorDto {
+  id: number;
+  cnpj: string;
+  nome: string;
+  optanteSimples: boolean;
+  municipio: string | null;
+}
+
+export interface MedicaoDto {
+  id: number;
+  contratoId: number;
+  competencia: string;
+  valorMedido: Money;
+  notaFiscal: string | null;
+}
+
+export interface ItemRetencaoDto {
+  tributo: string;
+  aliquota: Money;
+  base: Money;
+  valor: Money;
+  baseLegal: string | null;
+  observacao: string | null;
+}
+
+export interface ResultadoRetencaoDto {
+  valorBruto: Money;
+  irrf: Money;
+  inss: Money;
+  iss: Money;
+  pis: Money;
+  cofins: Money;
+  csll: Money;
+  das: Money;
+  totalRetido: Money;
+  valorLiquido: Money;
+  memoria: ItemRetencaoDto[];
+}
+
+export interface MedicaoComRetencoesDto {
+  medicao: MedicaoDto;
+  retencoesPreview: ResultadoRetencaoDto | null;
+}
+
+export const MODALIDADES_LEI_14133 = [
+  'PREGAO_ELETRONICO',
+  'CONCORRENCIA',
+  'DISPENSA',
+  'INEXIGIBILIDADE',
+  'DIALOGO_COMPETITIVO',
+  'CONCURSO',
+  'LEILAO',
+] as const;
+
+export const TIPOS_SERVICO_RETENCAO = [
+  'GERAL',
+  'LIMPEZA_CONSERVACAO',
+  'ENGENHARIA',
+  'VIGILANCIA',
+  'TRANSPORTE_CARGAS',
+  'MANUTENCAO_PREDIAL',
+  'OBRAS_CIVIS',
+] as const;
+
 /** Helpers de formatação BR */
 export const fmt = {
   money: (v: Money | string | number | null | undefined): string => {

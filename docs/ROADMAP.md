@@ -245,8 +245,17 @@ Sprint 8.B (parcial — concluída):
 - [x] Componentes form reutilizáveis: `Field`, `Select`, `FormCard`, `ErrorBanner`, `SubmitButton` (com `useFormStatus`)
 - [x] Nav atualizado: + Simulações
 
+Sprint 8.B (parcial 2 — concluída): Contratos + medição com preview de retenção
+- [x] **/contratos** (lista server) com tabela id/objeto/modalidade/data/valor/PNCP + botão "+ Novo contrato"
+- [x] **/contratos/novo** (server + ContratoForm client com useActionState) — Select fornecedor (de `/api/v1/financeiro/fornecedores`), modalidade Lei 14.133 (PREGAO_ELETRONICO/CONCORRENCIA/DISPENSA/INEXIGIBILIDADE/DIALOGO_COMPETITIVO/CONCURSO/LEILAO), validação + erros traduzidos
+- [x] **/contratos/[id]** (detalhe) com 3 cards (valor global / total medido / saldo restante) com semantic coloring (saldo<10% → warn, negativo → danger), bloco do fornecedor com badge Simples Nacional, tabela de medições + CTA "+ Registrar medição"
+- [x] **/contratos/[id]/medicoes/nova** (client form): registra medição via BFF route `/api/medicoes` → POST `/api/v1/financeiro/contratos/{id}/medicoes`; **mostra preview de retenções inline** (grid 4 col com IRRF/INSS/ISS/PIS/COFINS/CSLL/DAS + total retido + líquido + memória item-a-item com base legal); aviso contextual sobre Simples Nacional vs não-optante
+- [x] BFF route `/api/medicoes/route.ts` (single POST) — proxy autenticado
+- [x] `lib/types.ts`: + FornecedorDto, MedicaoDto, ItemRetencaoDto, ResultadoRetencaoDto, MedicaoComRetencoesDto + constantes `MODALIDADES_LEI_14133` e `TIPOS_SERVICO_RETENCAO`
+- [x] Nav: + "Contratos"
+
 Sprint 8.B (restante — defer):
-- [ ] Forms para receitas, despesas, contratos e medições
+- [ ] Forms para receitas, despesas e fornecedores (CRUD direto via Swagger ainda funciona)
 - [ ] Acessibilidade WCAG 2.1 AA — auditoria com axe-core no CI
 - [ ] Tests E2E com Playwright (login → dashboard → cálculo → notificação)
 
