@@ -61,6 +61,8 @@ public class SecurityConfig {
                                 "/actuator/info", "/actuator/prometheus").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        // Transparência pública (LAI / LRF art. 48-A) — sem auth
+                        .requestMatchers(HttpMethod.GET, "/api/public/transparencia/**").permitAll()
 
                         // Estrutural: ADMIN (catálogos + contratos têm impacto auditorial)
                         .requestMatchers(HttpMethod.PUT,    "/api/v1/financeiro/**").hasRole("ADMIN")

@@ -1,0 +1,28 @@
+package br.com.caqi.engine.core.web;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.CorsFilter;
+
+import java.util.List;
+
+/** CORS aberto para /api/public/** — qualquer origem consome (LAI). */
+@Configuration
+public class CorsConfig {
+
+    @Bean
+    public CorsFilter publicCorsFilter() {
+        CorsConfiguration cfg = new CorsConfiguration();
+        cfg.setAllowedOriginPatterns(List.of("*"));
+        cfg.setAllowedMethods(List.of("GET", "OPTIONS"));
+        cfg.setAllowedHeaders(List.of("Accept", "Content-Type", "Origin"));
+        cfg.setAllowCredentials(false);
+        cfg.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/api/public/**", cfg);
+        return new CorsFilter(source);
+    }
+}

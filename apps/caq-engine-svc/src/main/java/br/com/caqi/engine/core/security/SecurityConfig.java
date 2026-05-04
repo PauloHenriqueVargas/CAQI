@@ -74,6 +74,8 @@ public class SecurityConfig {
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**",
                                          "/swagger-ui.html").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        // Transparência pública (LAI / LRF art. 48-A) — sem auth
+                        .requestMatchers(HttpMethod.GET, "/api/public/transparencia/**").permitAll()
 
                         // ── RBAC declarativo (single source of truth) ──
                         // Estrutural: criar/atualizar insumo, parametros — ADMIN

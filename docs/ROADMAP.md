@@ -173,12 +173,27 @@ Sprint 5.C (próxima — defer):
 - [ ] Marts: caq_aluno_ano, fundeb_execucao_mensal, transparencia_lai
 - [ ] Orquestração via Dagster ou cron simples
 
-## Fase 6 — Transparência/LAI (Sprint 6) — `caq-compliance-svc` + `web`
+## Fase 6 — Transparência/LAI
 
-- [ ] Portal de dados abertos (rota pública sem auth no Next.js)
-- [ ] API pública sob `/api/public/...` no compliance-svc
-- [ ] Publicação automática (LRF 48-A) — CronJob k8s
-- [ ] Repositório documental (anexos contratuais em S3/MinIO)
+**Status: ⏳ Em andamento.**
+
+Sprint 6.A (concluída) — API pública LAI nos 3 serviços:
+- [x] **engine-svc** — GET /api/public/transparencia/{calculos, calculos/{id}, insumos}
+- [x] **financeiro-svc** — GET /api/public/transparencia/{contratos, despesas, fundeb-execucao, siope-quadro}
+- [x] **compliance-svc** — GET /api/public/transparencia/notificacoes
+- [x] CorsConfig em cada svc — `/api/public/**` aceita qualquer origem (allowedOriginPatterns=*), métodos GET+OPTIONS, sem credentials
+- [x] SecurityConfig em cada svc — `/api/public/transparencia/**` permitAll
+- [x] Cache HTTP `max-age=300, public` em todas as respostas — reduz carga no portal
+- [x] LGPD: dados expostos são públicos por natureza (CNPJ PJ, valores agregados, contratos firmados, notificações). NÃO expõe folha individual, CPF, dados pessoais de aluno. Versão pública do SIOPE omite `pendencias` (auditoria interna).
+
+Sprint 6.B (próxima):
+- [ ] Frontend público no Next.js — rota `/transparencia` (sem auth) que consome os endpoints públicos via BFF
+- [ ] Acessibilidade WCAG 2.1 AA (axe-core)
+- [ ] Open Graph + sitemap.xml para SEO
+
+Sprint 6.C (próxima):
+- [ ] CronJob/scheduled task de publicação automática (LRF art. 48-A — até 24h após executado): grava em `publicacao_portal` (já existe na DDL V0001) com hash do conteúdo e timestamp
+- [ ] Repositório documental: anexos contratuais em MinIO/S3 (PJ não-confidencial; metadados públicos via /api/public/transparencia/anexos)
 
 ## Fase 7 — Auditoria + Simulador (Sprint 7) — `caq-compliance-svc` + `caq-engine-svc`
 

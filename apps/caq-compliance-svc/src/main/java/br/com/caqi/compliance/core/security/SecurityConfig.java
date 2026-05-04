@@ -59,6 +59,8 @@ public class SecurityConfig {
                                 "/actuator/info", "/actuator/prometheus").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        // Transparência pública (LAI / LRF art. 48-A) — sem auth
+                        .requestMatchers(HttpMethod.GET, "/api/public/transparencia/**").permitAll()
 
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/compliance/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH,  "/api/v1/compliance/notificacoes/**").hasRole("GESTOR")
