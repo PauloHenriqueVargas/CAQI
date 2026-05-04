@@ -254,8 +254,17 @@ Sprint 8.B (parcial 2 — concluída): Contratos + medição com preview de rete
 - [x] `lib/types.ts`: + FornecedorDto, MedicaoDto, ItemRetencaoDto, ResultadoRetencaoDto, MedicaoComRetencoesDto + constantes `MODALIDADES_LEI_14133` e `TIPOS_SERVICO_RETENCAO`
 - [x] Nav: + "Contratos"
 
+Sprint 8.B (parcial 3 — concluída): CRUD UI completo — fornecedores, receitas, despesas
+- [x] **/fornecedores** (lista) + **/fornecedores/novo** (Server Action) com checkbox Optante Simples Nacional + helper texto sobre LC 123/2006 + retenções
+- [x] **/receitas** (lista filtrada por ano com agregação por origem em cards) + **/receitas/nova** (Select origem ∈ {impostos, transferencias, Fundeb_VAAF, Fundeb_VAAT, Fundeb_VAAR, outras}, validação de competência YYYYMM)
+- [x] **/despesas** (lista filtrada por ano com 4 KPI cards: total, pessoal, capital, MDE) + **/despesas/nova** com **tratamento explícito do bloqueador**:
+  - Captura 409 Conflict do backend (EmpenhoBloqueadoException quando flag ativa)
+  - Extrai mensagem de Spring ProblemDetail
+  - Exibe banner destacado com ícone "⛔ EMPENHO BLOQUEADO PELO VALIDADOR" + motivo + orientação ao usuário
+- [x] `lib/types.ts`: + ReceitaDto, DespesaDto, FonteRecursoDto + constantes ORIGENS_RECEITA, SIOPE_GRUPOS
+- [x] Nav atualizada com Receitas, Despesas, Fornecedores
+
 Sprint 8.B (restante — defer):
-- [ ] Forms para receitas, despesas e fornecedores (CRUD direto via Swagger ainda funciona)
 - [ ] Acessibilidade WCAG 2.1 AA — auditoria com axe-core no CI
 - [ ] Tests E2E com Playwright (login → dashboard → cálculo → notificação)
 

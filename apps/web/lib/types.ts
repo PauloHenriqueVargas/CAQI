@@ -166,6 +166,44 @@ export const TIPOS_SERVICO_RETENCAO = [
   'OBRAS_CIVIS',
 ] as const;
 
+export const ORIGENS_RECEITA = [
+  'impostos',
+  'transferencias',
+  'Fundeb_VAAF',
+  'Fundeb_VAAT',
+  'Fundeb_VAAR',
+  'outras',
+] as const;
+
+export const SIOPE_GRUPOS = ['MDE', 'Geral'] as const;
+
+export interface ReceitaDto {
+  id: number;
+  competencia: string;
+  valor: Money;
+  origem: string;
+  pcasp: string | null;
+}
+
+export interface DespesaDto {
+  id: number;
+  competencia: string;
+  natureza: string;
+  valor: Money;
+  fonteRecursoId: number | null;
+  pcasp: string | null;
+  siopeGrupo: string | null;
+  contratoId: number | null;
+  isPessoal: boolean;
+  isCapital: boolean;
+}
+
+export interface FonteRecursoDto {
+  id: number;
+  tipo: 'Propria' | 'VAAF' | 'VAAT' | 'VAAR' | 'Outras';
+  descricao: string | null;
+}
+
 /** Helpers de formatação BR */
 export const fmt = {
   money: (v: Money | string | number | null | undefined): string => {
