@@ -3,12 +3,16 @@ import Link from 'next/link';
 import { SignOutButton } from '@/components/SignOutButton';
 
 const NAV_ITEMS = [
-  { href: '/dashboard',    label: 'Dashboard' },
-  { href: '/calculos',     label: 'Cálculos CAQ' },
-  { href: '/simulacoes',   label: 'Simulações' },
-  { href: '/fundeb',       label: 'Fundeb / MDE' },
-  { href: '/notificacoes', label: 'Notificações' },
-  { href: '/profile/mfa',  label: 'MFA' },
+  { href: '/dashboard',     label: 'Dashboard' },
+  { href: '/calculos',      label: 'Cálculos CAQ' },
+  { href: '/simulacoes',    label: 'Simulações' },
+  { href: '/receitas',      label: 'Receitas' },
+  { href: '/despesas',      label: 'Despesas' },
+  { href: '/contratos',     label: 'Contratos' },
+  { href: '/fornecedores',  label: 'Fornecedores' },
+  { href: '/fundeb',        label: 'Fundeb / MDE' },
+  { href: '/notificacoes',  label: 'Notificações' },
+  { href: '/profile/mfa',   label: 'MFA' },
 ];
 
 export default function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
