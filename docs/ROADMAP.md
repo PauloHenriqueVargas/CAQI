@@ -264,12 +264,16 @@ Sprint 9.A (concluída) — Documentação LGPD/operacional + backup CronJob:
 - [x] **CronJob backup Helm** (`charts/caqi/templates/cronjob-backup.yaml`): pg_dump comprimido + upload S3 com KMS encryption; configurável via `values.yaml/backup.*`; emptyDir tmp 5Gi; rodando como user 1000 read-only-rootfs; concurrencyPolicy=Forbid
 - [x] `values.yaml` ganha seção `backup` com schedule, retention, destination (s3/minio), resources
 
-Sprint 9.B (próxima):
-- [ ] Auth Gov.br OAuth2 (NextAuth provider customizado + Spring Resource Server validando JWT)
+Sprint 9.B (parcial — concluída):
+- [x] **V0006 — Trigger de proteção em log_auditoria**: REVOKE UPDATE/DELETE/TRUNCATE do role `caqi` + `block_log_auditoria_changes()` raise exception 42501; trigger `BEFORE UPDATE OR DELETE OR TRUNCATE` FOR EACH STATEMENT. INSERT/SELECT preservados. Procedimento de exceção documentado em HARDENING_PRODUCAO.md §5.1 (DISABLE TRIGGER + ATA + RIPD)
+- [x] **ProtecaoLogAuditoriaTest** (@SpringBootTest + Testcontainers): valida que INSERT funciona, UPDATE/DELETE/TRUNCATE são bloqueados com mensagem "append-only"; testa o procedimento de exceção (DISABLE → operação → ENABLE)
+- [x] HARDENING_PRODUCAO.md atualizado: marca trigger como done com comando do procedimento
+
+Sprint 9.B (restante — defer, exige integração externa):
+- [ ] Auth Gov.br OAuth2 — NextAuth provider customizado + Spring Resource Server validando JWT (precisa credenciais Gov.br reais para testar)
 - [ ] MFA TOTP para usuários ADMIN
 - [ ] mTLS entre serviços (Istio/Linkerd) — opcional
 - [ ] Pen-test interno (OWASP Top 10, IDOR)
-- [ ] Trigger de proteção em log_auditoria (revoke UPDATE/DELETE) — defesa em profundidade da cadeia SHA-256
 - [ ] Disaster recovery + backups (pg_dump → S3 com KMS)
 - [ ] Documentação de operação (runbook por incidente)
 

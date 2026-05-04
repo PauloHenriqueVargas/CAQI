@@ -52,8 +52,30 @@ expõe município a riscos legais (LGPD, LRF) e financeiros.
 ## 5. Auditoria e compliance
 
 - [ ] **Cadeia SHA-256** verificada na primeira inicialização — `GET /compliance/auditoria/verificar` → `{integro: true}`
-- [ ] Tabela `log_auditoria` **NÃO** tem privilégio de UPDATE para usuário `caqi` (só INSERT/SELECT)
-- [ ] Tabela `log_auditoria` com **trigger de proteção** contra UPDATE/DELETE *(opcional, defesa em profundidade)*
+- [x] Tabela `log_auditoria` **NÃO** tem privilégio de UPDATE para usuário `caqi` (só INSERT/SELECT) — aplicado em V0006 via REVOKE
+- [x] Tabela `log_auditoria` com **trigger de proteção** contra UPDATE/DELETE/TRUNCATE — aplicado em V0006 (`prevent_log_auditoria_changes`); raise exception 42501; procedimento de exceção:
+
+### §5.1 Procedimento de exceção (alteração emergencial em log_auditoria)
+
+Apenas SUPERUSER pode contornar — o usuário aplicacional `caqi` continua bloqueado pelo trigger mesmo após DISABLE.
+
+```sql
+-- 1. Conectar como SUPERUSER (não como 'caqi')
+psql -U postgres -d caqi
+
+-- 2. Documentar em ata + abrir RIPD do incidente ANTES de desabilitar
+-- 3. Desabilitar trigger
+ALTER TABLE log_auditoria DISABLE TRIGGER prevent_log_auditoria_changes;
+
+-- 4. Realizar a operação documentada (ex.: anonimização legal)
+-- ...
+
+-- 5. Religar IMEDIATAMENTE
+ALTER TABLE log_auditoria ENABLE TRIGGER prevent_log_auditoria_changes;
+
+-- 6. Verificar integridade da cadeia após mudança
+-- (via API: GET /api/v1/compliance/auditoria/verificar)
+```
 - [ ] **DPIA/RIPD** preenchido e aprovado pelo DPO (`docs/legal/DPIA_RIPD.md`)
 - [ ] **ROPA** atualizado e revisado (`docs/legal/ROPA.md`)
 - [ ] **Política de privacidade** publicada no portal de transparência (`docs/legal/POLITICA_PRIVACIDADE.md`)
