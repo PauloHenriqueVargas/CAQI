@@ -89,6 +89,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/caqi/simulacoes").hasRole("GESTOR")
                         .requestMatchers(HttpMethod.POST, "/api/v1/caqi/insumos/*/custos").hasRole("GESTOR")
 
+                        // MFA: cada usuário gerencia o próprio (basta estar autenticado)
+                        .requestMatchers("/api/v1/auth/mfa/**").authenticated()
+
                         // Consulta: GETs no domínio CAQ — LEITOR
                         .requestMatchers(HttpMethod.GET, "/api/v1/caqi/**").hasRole("LEITOR")
 

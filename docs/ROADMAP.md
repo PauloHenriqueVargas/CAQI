@@ -269,9 +269,18 @@ Sprint 9.B (parcial — concluída):
 - [x] **ProtecaoLogAuditoriaTest** (@SpringBootTest + Testcontainers): valida que INSERT funciona, UPDATE/DELETE/TRUNCATE são bloqueados com mensagem "append-only"; testa o procedimento de exceção (DISABLE → operação → ENABLE)
 - [x] HARDENING_PRODUCAO.md atualizado: marca trigger como done com comando do procedimento
 
+Sprint 9.B (parcial 2 — concluída): MFA TOTP backend
+- [x] **V0007 — usuario_mfa table** (username PK, secret_base32, enabled, created_at, enabled_at, ultima_validacao)
+- [x] JPA UsuarioMfa + UsuarioMfaRepository
+- [x] Lib `dev.samstevens.totp:totp:1.7.1` adicionada via version catalog
+- [x] **MfaService** (RFC 6238, SHA1, 6 dígitos, 30s, ±1 janela): setup() gera secret 160-bit base32 + URI otpauth (issuer=CAQi-{municipioNome}); enable(codigo) valida primeiro código e ativa; verify(codigo) usado em fluxo de login futuro; disable(codigo) exige confirmação; estaHabilitado() para checks
+- [x] **MfaController**: POST /api/v1/auth/mfa/{setup,enable,verify,disable} + GET /status (autenticado, qualquer role)
+- [x] SecurityConfig: + `/api/v1/auth/mfa/**` autenticado (cada usuário gerencia o próprio)
+- [x] MfaServiceTest unit (Mockito + repo em memória) cobre 5 cenários: setup gera URI correta, enable valida código (correto/incorreto), verify só funciona quando enabled, disable exige confirmação, estaHabilitado reflete ciclo
+
 Sprint 9.B (restante — defer, exige integração externa):
+- [ ] Integração MFA no fluxo de login (NextAuth segundo passo após CredentialsProvider)
 - [ ] Auth Gov.br OAuth2 — NextAuth provider customizado + Spring Resource Server validando JWT (precisa credenciais Gov.br reais para testar)
-- [ ] MFA TOTP para usuários ADMIN
 - [ ] mTLS entre serviços (Istio/Linkerd) — opcional
 - [ ] Pen-test interno (OWASP Top 10, IDOR)
 - [ ] Disaster recovery + backups (pg_dump → S3 com KMS)

@@ -21,6 +21,9 @@ dependencies {
     implementation(libs.springdoc.openapi.starter.webmvc.ui)
     implementation(libs.spring.cloud.starter.circuitbreaker.resilience4j)
 
+    // MFA TOTP (RFC 6238)
+    implementation(libs.totp)
+
     // Observability
     implementation(libs.micrometer.tracing.bridge.otel)
     implementation(libs.micrometer.registry.prometheus)

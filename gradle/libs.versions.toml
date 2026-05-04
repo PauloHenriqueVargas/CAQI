@@ -10,6 +10,7 @@ mapstruct = "1.5.5.Final"
 testcontainers = "1.20.2"
 opentelemetry = "1.43.0"
 resilience4j = "2.2.0"
+totp = "1.7.1"
 
 [libraries]
 # Spring Boot starters
@@ -42,6 +43,9 @@ mapstruct-processor = { module = "org.mapstruct:mapstruct-processor", version.re
 micrometer-tracing-bridge-otel = { module = "io.micrometer:micrometer-tracing-bridge-otel" }
 micrometer-registry-prometheus = { module = "io.micrometer:micrometer-registry-prometheus" }
 opentelemetry-exporter-otlp = { module = "io.opentelemetry:opentelemetry-exporter-otlp" }
+
+# MFA TOTP (RFC 6238) — Google Authenticator, Aegis, etc.
+totp = { module = "dev.samstevens.totp:totp", version.ref = "totp" }
 
 # Tests
 testcontainers-postgresql = { module = "org.testcontainers:postgresql", version.ref = "testcontainers" }
