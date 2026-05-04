@@ -1,0 +1,208 @@
+# Docker Compose para desenvolvimento local.
+# Sobe a infra (Postgres, Redis, RabbitMQ) + os 4 microserviços Spring + Next.js.
+# Para subir só a infra: `docker compose up -d postgres redis rabbitmq`
+# Para subir tudo: `docker compose up --build`
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: caqi-postgres
+    environment:
+      POSTGRES_DB: caqi
+      POSTGRES_USER: caqi
+      POSTGRES_PASSWORD: caqi_dev_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    ports:
+      - "5432:5432"
+    volumes:
+      - caqi_pg_data:/var/lib/postgresql/data
+      - ./infra/docker/postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U caqi -d caqi"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: caqi-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - caqi_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: caqi-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: caqi
+      RABBITMQ_DEFAULT_PASS: caqi_dev_password
+      RABBITMQ_DEFAULT_VHOST: caqi
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - caqi_rmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:latest
+    container_name: caqi-minio
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: caqi_minio
+      MINIO_ROOT_PASSWORD: caqi_minio_dev_password
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - caqi_minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  caq-engine-svc:
+    build:
+      context: ./apps/caq-engine-svc
+      dockerfile: Dockerfile
+      target: dev
+    container_name: caqi-engine
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      DATABASE_URL: jdbc:postgresql://postgres:5432/caqi
+      DATABASE_USER: caqi
+      DATABASE_PASSWORD: caqi_dev_password
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: caqi
+      RABBITMQ_PASSWORD: caqi_dev_password
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4317
+      OTEL_SERVICE_NAME: caq-engine-svc
+    depends_on:
+      postgres: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+    ports:
+      - "8081:8081"
+    restart: unless-stopped
+
+  caq-financeiro-svc:
+    build:
+      context: ./apps/caq-financeiro-svc
+      dockerfile: Dockerfile
+      target: dev
+    container_name: caqi-financeiro
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      DATABASE_URL: jdbc:postgresql://postgres:5432/caqi
+      DATABASE_USER: caqi
+      DATABASE_PASSWORD: caqi_dev_password
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: caqi
+      RABBITMQ_PASSWORD: caqi_dev_password
+    depends_on:
+      postgres: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+    ports:
+      - "8082:8082"
+    restart: unless-stopped
+
+  caq-escolar-svc:
+    build:
+      context: ./apps/caq-escolar-svc
+      dockerfile: Dockerfile
+      target: dev
+    container_name: caqi-escolar
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      DATABASE_URL: jdbc:postgresql://postgres:5432/caqi
+      DATABASE_USER: caqi
+      DATABASE_PASSWORD: caqi_dev_password
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: caqi
+      RABBITMQ_PASSWORD: caqi_dev_password
+    depends_on:
+      postgres: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+    ports:
+      - "8083:8083"
+    restart: unless-stopped
+
+  caq-compliance-svc:
+    build:
+      context: ./apps/caq-compliance-svc
+      dockerfile: Dockerfile
+      target: dev
+    container_name: caqi-compliance
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      DATABASE_URL: jdbc:postgresql://postgres:5432/caqi
+      DATABASE_USER: caqi
+      DATABASE_PASSWORD: caqi_dev_password
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: caqi
+      RABBITMQ_PASSWORD: caqi_dev_password
+    depends_on:
+      postgres: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+    ports:
+      - "8084:8084"
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+      target: dev
+    container_name: caqi-web
+    environment:
+      NODE_ENV: development
+      CAQ_ENGINE_URL: http://caq-engine-svc:8081
+      CAQ_FINANCEIRO_URL: http://caq-financeiro-svc:8082
+      CAQ_ESCOLAR_URL: http://caq-escolar-svc:8083
+      CAQ_COMPLIANCE_URL: http://caq-compliance-svc:8084
+      NEXTAUTH_SECRET: dev_change_me_use_openssl_rand_hex_32
+      NEXTAUTH_URL: http://localhost:3000
+    depends_on:
+      - caq-engine-svc
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./apps/web:/app
+      - /app/node_modules
+      - /app/.next
+    restart: unless-stopped
+
+# Observabilidade (Grafana stack) — descomente para subir LGTM local
+#  prometheus:
+#    image: prom/prometheus:latest
+#    ports: ["9090:9090"]
+#  grafana:
+#    image: grafana/grafana:latest
+#    ports: ["3001:3000"]
+#  tempo:
+#    image: grafana/tempo:latest
+#    ports: ["3200:3200", "4317:4317"]
+#  loki:
+#    image: grafana/loki:latest
+#    ports: ["3100:3100"]
+
+volumes:
+  caqi_pg_data:
+  caqi_redis_data:
+  caqi_rmq_data:
+  caqi_minio_data:

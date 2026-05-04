@@ -1,0 +1,166 @@
+# Valores padrão para o chart caqi.
+# Override por município em values-<municipio>.yaml.
+
+# === Identificação do tenant ===
+tenant:
+  municipioId: "000000"           # código IBGE (7 dígitos) do município
+  municipioNome: "Municipio Exemplo"
+  uf: "XX"
+
+# === Imagens ===
+image:
+  registry: ghcr.io               # ou registry corporativo / ECR / ACR
+  repository: caqi
+  tag: "0.1.0"                    # sobrescrever no CD
+  pullPolicy: IfNotPresent
+imagePullSecrets: []
+
+# === Microserviços ===
+services:
+  engine:
+    enabled: true
+    replicas: 1
+    port: 8081
+    resources:
+      requests: { cpu: 200m, memory: 512Mi }
+      limits:   { cpu: 1000m, memory: 1024Mi }
+  financeiro:
+    enabled: true
+    replicas: 1
+    port: 8082
+    resources:
+      requests: { cpu: 200m, memory: 512Mi }
+      limits:   { cpu: 1000m, memory: 1024Mi }
+  escolar:
+    enabled: true
+    replicas: 1
+    port: 8083
+    resources:
+      requests: { cpu: 200m, memory: 512Mi }
+      limits:   { cpu: 1000m, memory: 1024Mi }
+  compliance:
+    enabled: true
+    replicas: 1
+    port: 8084
+    resources:
+      requests: { cpu: 200m, memory: 512Mi }
+      limits:   { cpu: 1000m, memory: 1024Mi }
+  web:
+    enabled: true
+    replicas: 1
+    port: 3000
+    resources:
+      requests: { cpu: 100m, memory: 256Mi }
+      limits:   { cpu: 500m, memory: 512Mi }
+
+# === Persistência (PostgreSQL) ===
+postgresql:
+  # Em prod, geralmente usa RDS/Cloud SQL externo; aqui só o caminho.
+  external:
+    enabled: true
+    host: ""                      # ex.: postgres.caqi-municipio-xyz.svc.cluster.local
+    port: 5432
+    database: "caqi"
+    username: "caqi"
+    existingSecret: "caqi-db"     # k8s Secret com chave 'password'
+    existingSecretKey: "password"
+
+# === RabbitMQ ===
+rabbitmq:
+  external:
+    enabled: true
+    host: ""
+    port: 5672
+    vhost: "caqi"
+    username: "caqi"
+    existingSecret: "caqi-rabbitmq"
+    existingSecretKey: "password"
+
+# === Object store (anexos LAI, exports SIOPE) ===
+objectStore:
+  provider: s3                    # s3 | minio
+  s3:
+    bucket: ""
+    region: "sa-east-1"
+    # Use IRSA (EKS) ou IAM user com KMS-encrypted bucket
+  minio:
+    endpoint: ""
+    accessKey: ""
+    secretKey: ""
+
+# === KMS (criptografia de campos sensíveis) ===
+kms:
+  provider: aws                   # aws | vault
+  aws:
+    keyId: ""                     # arn:aws:kms:sa-east-1:...
+  vault:
+    address: ""
+    role: ""
+
+# === Observabilidade ===
+observability:
+  otelCollector:
+    enabled: true
+    endpoint: "http://otel-collector.observability:4317"
+  prometheus:
+    serviceMonitor:
+      enabled: true               # requer Prometheus Operator no cluster
+
+# === Compliance — toggles dos enforcers ===
+compliance:
+  enforceFundeb70: true
+  enforceVaat15: true
+  enforceMde25: true
+
+# === Ingress ===
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/proxy-body-size: "32m"
+  hosts:
+    - host: caqi.municipio-exemplo.gov.br
+      paths:
+        - path: /
+          pathType: Prefix
+          service: web
+        - path: /api/engine
+          pathType: Prefix
+          service: engine
+        - path: /api/financeiro
+          pathType: Prefix
+          service: financeiro
+        - path: /api/escolar
+          pathType: Prefix
+          service: escolar
+        - path: /api/compliance
+          pathType: Prefix
+          service: compliance
+  tls:
+    - hosts:
+        - caqi.municipio-exemplo.gov.br
+      secretName: caqi-tls
+
+# === Auth Gov.br ===
+auth:
+  govbr:
+    enabled: false                # ligar em prod
+    issuer: "https://sso.acesso.gov.br"
+    existingSecret: "caqi-govbr"  # chaves: clientId, clientSecret
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podSecurityContext:
+  runAsNonRoot: true
+  fsGroup: 1000
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  runAsUser: 1000
+  capabilities:
+    drop: ["ALL"]

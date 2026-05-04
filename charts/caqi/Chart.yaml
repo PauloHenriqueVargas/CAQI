@@ -1,0 +1,28 @@
+apiVersion: v2
+name: caqi
+description: |
+  Sistema CAQ/CAQi — chart Helm para deploy de uma instância isolada por município.
+  Cada release corresponde a um município (tenant), em namespace dedicado.
+
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+
+keywords:
+  - educacao
+  - caq
+  - caqi
+  - fundeb
+  - mde
+  - lai
+  - siafic
+  - lgpd
+
+home: https://example.com/caqi
+
+maintainers:
+  - name: CAQI Project
+    email: contato@caqi.example
+
+annotations:
+  category: PublicSector

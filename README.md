@@ -2,40 +2,122 @@
 
 Sistema SaaS para gestão do **Custo Aluno Qualidade (CAQ/CAQi)** em redes municipais e estaduais de educação básica, com conformidade nativa às exigências legais brasileiras (CF/88, LDB, PNE, Fundeb, LRF, LAI, SIAFIC, Lei 14.133/2021, LGPD).
 
-## Estado atual
+**Licença:** [Proprietária](LICENSE) — todos os direitos reservados.
 
-Repositório recém-criado. Já incorpora artefatos de Sprint 0 produzidos previamente:
+## Arquitetura — visão rápida
 
-| Artefato | Local | Descrição |
-|---|---|---|
-| OpenAPI 3.1 (esqueleto) | [openapi/caqi-openapi.yaml](openapi/caqi-openapi.yaml) | Endpoints v0.1.0 — caqi, fundeb, siope, escolar, compras, transparência, auditoria, tributário |
-| Modelo de dados (DDL) | [apps/api/migrations/0001_initial_schema.sql](apps/api/migrations/0001_initial_schema.sql) | 26 tabelas PostgreSQL — escolas, etapas, insumos, Fundeb, contratos, retenções, auditoria, ROPA |
-| Coleção Postman | [openapi/postman/](openapi/postman/) | Collection + tests + environment alinhados ao OpenAPI |
-| Prompt-mestre original | [docs/references/PROMPT_MESTRE_Sistema_CAQ_CAQi.pdf](docs/references/PROMPT_MESTRE_Sistema_CAQ_CAQi.pdf) | Especificação de origem (resumo do CAQ.pdf) |
-| Anexo CAQ (conceito + módulos) | [docs/references/PROMPT_MESTRE_anexo.pdf](docs/references/PROMPT_MESTRE_anexo.pdf) | Páginas 6–8, 20–29, 34 — base conceitual |
-| Sprint 0 — stories + modelo | [docs/references/Sprint0_CAQ_Stories_ModeloDados.docx](docs/references/Sprint0_CAQ_Stories_ModeloDados.docx) | User stories e modelo de dados v0 |
-| Planilha base CAQi | [docs/references/Planilha_Base_CAQi_Preenchida.xlsx](docs/references/Planilha_Base_CAQi_Preenchida.xlsx) | Catálogo inicial de insumos e parâmetros |
-| Checklist de conformidade | [docs/legal/Checklist_Conformidade_CAQ.xlsx](docs/legal/Checklist_Conformidade_CAQ.xlsx) | Mapa CF/LDB/PNE/Fundeb/LRF/LAI/SIAFIC/14.133/LGPD |
-| Governança do projeto | [docs/Governanca_Projeto_CAQ.xlsx](docs/Governanca_Projeto_CAQ.xlsx) | Estrutura de governança |
+- **Backend:** 4 microserviços Spring Boot 3 / Java 21 / Gradle KTS
+  - `caq-engine-svc` (8081) — motor CAQ/CAQi, parâmetros, insumos, índices, simulações; **owner do schema PostgreSQL** via Flyway
+  - `caq-financeiro-svc` (8082) — orçamento, Fundeb (70%/15%), MDE 25%, contabilidade SIAFIC/PCASP, retenções tributárias
+  - `caq-escolar-svc` (8083) — escolas, turmas, matrículas, censo, PNAE/PNATE, pessoal/folha
+  - `caq-compliance-svc` (8084) — validações legais, auditoria imutável (chain SHA-256), ROPA/LGPD, transparência LAI, integração SIOPE
+- **Frontend + BFF:** [Next.js 14](apps/web) (App Router) + TypeScript + Tailwind + shadcn/ui — porta 3000
+- **Persistência:** PostgreSQL 16 (schema-per-service no MVP; database-per-service em Fase 2)
+- **Mensageria:** RabbitMQ
+- **Object store:** S3 (cloud) ou MinIO (on-prem/local)
+- **Observabilidade:** OpenTelemetry → Grafana stack (Loki + Tempo + Prometheus)
+- **Deploy:** Helm chart `charts/caqi` — 1 chart, N releases (1 release por município, namespace dedicado)
 
-## Próximos passos (a validar)
-
-Veja [docs/STACK.md](docs/STACK.md) (proposta de stack) e [docs/ROADMAP.md](docs/ROADMAP.md) (faseamento da entrega).
+Detalhes em [docs/STACK.md](docs/STACK.md). Faseamento em [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Estrutura
 
 ```
 CAQI/
 ├── apps/
-│   ├── api/          # Backend FastAPI (a implementar)
-│   └── web/          # Frontend React (a implementar)
-├── analytics/        # dbt — modelos analíticos e motor CAQ (a implementar)
-├── openapi/          # Spec OpenAPI 3.1 + Postman
-├── docs/             # Documentação, referências, governança, conformidade
-├── infra/            # Docker, CI/CD, IaC
-└── .github/          # Workflows e templates
+│   ├── caq-engine-svc/         # Spring Boot — owner do schema
+│   ├── caq-financeiro-svc/     # Spring Boot
+│   ├── caq-escolar-svc/        # Spring Boot
+│   ├── caq-compliance-svc/     # Spring Boot
+│   └── web/                    # Next.js + BFF
+├── charts/caqi/                # Helm chart (1 release por município)
+├── analytics/                  # dbt (Fase 5+)
+├── openapi/                    # spec OpenAPI 3.1 + Postman (Sprint 0)
+├── infra/docker/               # init scripts (Postgres seed)
+├── docs/                       # documentação, referências, conformidade
+├── settings.gradle.kts         # Gradle multi-project
+├── build.gradle.kts            # config compartilhada (Java 21, Spring BOM)
+├── gradle/libs.versions.toml   # version catalog
+├── docker-compose.yml          # dev local: postgres+redis+rabbitmq+minio+4 svcs+web
+└── LICENSE                     # proprietária
 ```
 
-## Licença
+## Quickstart — desenvolvimento local
 
-A definir.
+**Pré-requisitos:** Docker + Docker Compose; Java 21; Node 20; Gradle 8.10 (ou use o wrapper).
+
+### Bootstrap do Gradle Wrapper (uma vez)
+
+O repositório ainda não inclui o `gradle/wrapper/gradle-wrapper.jar` nem `gradlew`. Gere-os com:
+
+```bash
+gradle wrapper --gradle-version 8.10
+```
+
+Depois disso, `./gradlew` substitui `gradle` em todos os comandos.
+
+### Subir só a infra (Postgres + RabbitMQ + Redis + MinIO)
+
+```bash
+docker compose up -d postgres rabbitmq redis minio
+```
+
+### Rodar serviços nativos (recomendado em dev — hot reload)
+
+```bash
+# Em terminais separados:
+./gradlew :apps:caq-engine-svc:bootRun
+./gradlew :apps:caq-financeiro-svc:bootRun
+./gradlew :apps:caq-escolar-svc:bootRun
+./gradlew :apps:caq-compliance-svc:bootRun
+
+cd apps/web && npm install && npm run dev
+```
+
+### Ou subir tudo via Docker
+
+```bash
+docker compose up --build
+```
+
+### Endpoints úteis
+
+| URL | Descrição |
+|---|---|
+| http://localhost:3000 | Frontend (Next.js) |
+| http://localhost:8081/swagger-ui.html | CAQ Engine |
+| http://localhost:8082/swagger-ui.html | Financeiro |
+| http://localhost:8083/swagger-ui.html | Escolar |
+| http://localhost:8084/swagger-ui.html | Compliance |
+| http://localhost:8081/actuator/health | Healthcheck (Spring Actuator) |
+| http://localhost:15672 | RabbitMQ Management (caqi/caqi_dev_password) |
+| http://localhost:9001 | MinIO Console (caqi_minio/caqi_minio_dev_password) |
+
+### Tests
+
+```bash
+./gradlew test                            # todos os serviços
+./gradlew :apps:caq-engine-svc:test       # um serviço
+cd apps/web && npm test                   # Next.js
+```
+
+## Artefatos de Sprint 0 (preservados)
+
+| Artefato | Local |
+|---|---|
+| OpenAPI 3.1 v0.1.0 | [openapi/caqi-openapi.yaml](openapi/caqi-openapi.yaml) |
+| Postman collection | [openapi/postman/](openapi/postman/) |
+| Modelo de dados (DDL inicial) | [apps/caq-engine-svc/src/main/resources/db/migration/V0001__initial_schema.sql](apps/caq-engine-svc/src/main/resources/db/migration/V0001__initial_schema.sql) |
+| Prompt-mestre + anexo CAQ.pdf | [docs/references/](docs/references/) |
+| Sprint 0 — stories + modelo | [docs/references/Sprint0_CAQ_Stories_ModeloDados.docx](docs/references/Sprint0_CAQ_Stories_ModeloDados.docx) |
+| Planilha base CAQi | [docs/references/Planilha_Base_CAQi_Preenchida.xlsx](docs/references/Planilha_Base_CAQi_Preenchida.xlsx) |
+| Checklist de conformidade | [docs/legal/Checklist_Conformidade_CAQ.xlsx](docs/legal/Checklist_Conformidade_CAQ.xlsx) |
+
+## Status do desenvolvimento
+
+| Fase | Estado |
+|---|---|
+| 0 — Fundação documental | ✓ Concluída |
+| 1 — Scaffold executável | ⏳ **Em andamento** (este commit) |
+| 2 — Motor CAQ/CAQi | Próxima |
+| 3+ | Ver [docs/ROADMAP.md](docs/ROADMAP.md) |

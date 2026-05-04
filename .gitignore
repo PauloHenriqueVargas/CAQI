@@ -1,23 +1,38 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
+# --- Java / Gradle ---
+.gradle/
 build/
-dist/
-*.egg-info/
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-.coverage
-htmlcov/
-.tox/
-.venv/
-venv/
-env/
+out/
+!gradle/wrapper/gradle-wrapper.jar
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*
+replay_pid*
+.gradletasknamecache
 
-# Node
+# Maven (caso algum módulo use)
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+
+# IntelliJ / Eclipse
+.idea/
+*.iml
+*.ipr
+*.iws
+.classpath
+.project
+.settings/
+.metadata/
+bin/
+.factorypath
+
+# --- Node / Next.js ---
 node_modules/
 npm-debug.log*
 yarn-debug.log*
@@ -25,46 +40,67 @@ yarn-error.log*
 pnpm-debug.log*
 .next/
 .turbo/
-dist/
-build/
+.vercel/
+next-env.d.ts
+.swc/
+coverage/
 
-# dbt
-target/
+# --- Python (analytics/dbt eventual) ---
+__pycache__/
+*.py[cod]
+*.so
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# --- dbt ---
 dbt_packages/
 logs/
 profiles.yml
 
-# Env / secrets
+# --- Env / secrets ---
 .env
 .env.*
 !.env.example
+!.env.local.example
 *.pem
 *.key
+*.p12
+*.pfx
+secrets/
 
-# IDE
+# --- IDE / Editor ---
 .vscode/
-.idea/
 *.swp
 *.swo
 
-# OS
+# --- OS ---
 .DS_Store
 Thumbs.db
 desktop.ini
 
-# DuckDB / SQLite
+# --- DBs locais ---
 *.duckdb
 *.duckdb.wal
 *.sqlite
 *.sqlite3
 *.db
 
-# Logs / temp
+# --- Logs / temp ---
 *.log
 tmp/
 temp/
 
-# Local data
+# --- Local data ---
 data/local/
 *.parquet
 *.csv.gz
+
+# --- Helm ---
+charts/*/charts/
+charts/*/Chart.lock
+*.tgz

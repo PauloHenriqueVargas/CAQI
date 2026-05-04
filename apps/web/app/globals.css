@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  *:focus-visible {
+    @apply outline-none ring-2 ring-brand ring-offset-2;
+  }
+}

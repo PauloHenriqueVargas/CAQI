@@ -1,0 +1,60 @@
+spring:
+  application:
+    name: caq-financeiro-svc
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/caqi}
+    username: ${DATABASE_USER:caqi}
+    password: ${DATABASE_PASSWORD:caqi_dev_password}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        default_schema: financeiro
+  flyway:
+    enabled: false  # Owner do schema é caq-engine-svc no MVP
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    virtual-host: ${RABBITMQ_VHOST:caqi}
+    username: ${RABBITMQ_USER:caqi}
+    password: ${RABBITMQ_PASSWORD:caqi_dev_password}
+  threads:
+    virtual:
+      enabled: true
+
+server:
+  port: ${SERVER_PORT:8082}
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      service: ${spring.application.name}
+      tenant: ${caqi.tenant.municipio-id:000000}
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4317}
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+caqi:
+  tenant:
+    municipio-id: ${CAQI_MUNICIPIO_ID:000000}
+    municipio-nome: ${CAQI_MUNICIPIO_NOME:Municipio Exemplo}

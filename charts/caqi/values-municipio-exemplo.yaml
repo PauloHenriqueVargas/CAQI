@@ -1,0 +1,41 @@
+# Exemplo: valores para deploy de um município específico.
+# Comando: helm upgrade --install caqi-municipio-exemplo ./charts/caqi \
+#            -f charts/caqi/values-municipio-exemplo.yaml \
+#            --namespace caqi-municipio-exemplo --create-namespace
+
+tenant:
+  municipioId: "1234567"
+  municipioNome: "Município Exemplo"
+  uf: "PE"
+
+image:
+  tag: "0.1.0"
+
+postgresql:
+  external:
+    host: caqi-municipio-exemplo-postgres.caqi-municipio-exemplo.svc.cluster.local
+
+rabbitmq:
+  external:
+    host: caqi-municipio-exemplo-rabbitmq.caqi-municipio-exemplo.svc.cluster.local
+
+objectStore:
+  s3:
+    bucket: caqi-municipio-exemplo-docs
+    region: sa-east-1
+
+kms:
+  aws:
+    keyId: arn:aws:kms:sa-east-1:000000000000:key/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee
+
+ingress:
+  hosts:
+    - host: caqi.municipio-exemplo.gov.br
+      paths:
+        - path: /
+          pathType: Prefix
+          service: web
+
+auth:
+  govbr:
+    enabled: true

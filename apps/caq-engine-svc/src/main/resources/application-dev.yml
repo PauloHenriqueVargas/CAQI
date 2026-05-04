@@ -1,0 +1,10 @@
+spring:
+  jpa:
+    show-sql: true
+  flyway:
+    clean-disabled: false  # apenas em DEV: permite db migrate clean
+logging:
+  level:
+    org.springframework.web: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE
