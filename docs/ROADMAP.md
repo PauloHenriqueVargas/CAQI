@@ -195,11 +195,26 @@ Sprint 6.C (próxima):
 - [ ] CronJob/scheduled task de publicação automática (LRF art. 48-A — até 24h após executado): grava em `publicacao_portal` (já existe na DDL V0001) com hash do conteúdo e timestamp
 - [ ] Repositório documental: anexos contratuais em MinIO/S3 (PJ não-confidencial; metadados públicos via /api/public/transparencia/anexos)
 
-## Fase 7 — Auditoria + Simulador (Sprint 7) — `caq-compliance-svc` + `caq-engine-svc`
+## Fase 7 — Auditoria + Simulador
 
-- [ ] Logs imutáveis com chain SHA-256 (`log_auditoria` já no schema)
-- [ ] Painel CACS-Fundeb / CME (visões somente leitura com pareceres)
-- [ ] Simulador "e se?" — expansão de tempo integral, redução alunos/turma, novas creches
+**Status: ⏳ Em andamento.**
+
+Sprint 7.A (concluída) — Simulador "e se?" no caq-engine-svc:
+- [x] **Overrides** record (alunosPorTurmaPorEtapa, qtdPadraoPorInsumo, custoMultiplierPorInsumo) com helper `Overrides.NONE`
+- [x] CaqCalculator refatorado: `calcular(req)` delega para `calcular(req, Overrides.NONE)`. Overload aplica overrides em 3 pontos: divisor por_turma (alunos/turma), qtd_padrao do insumo, multiplicador de custo. Backward compat preservada — CaqCalculatorRegressaoTest inalterado
+- [x] **SimuladorService**: roda calculator 2x (atual com NONE, simulado com overrides), computa diferenças por (escola, etapa) com deltaCaqi/deltaCaq + pctDeltaCaqi
+- [x] DTOs: CenarioSimulacaoDto + DiferencaItemDto + SimulacaoResultadoDto
+- [x] Endpoint POST /api/v1/caqi/simulacoes (GESTOR)
+- [x] **SimuladorServiceIntegrationTest** (@SpringBootTest + Testcontainers + seed): 2 cenários — alunos/turma 25→20 (deltaCaqi=+850 = +19,14%; deltaCaq=+1300) e PES-001 +25% (mesmo efeito numérico). Confirma que apenas PES-001 muda; MOB-001 e demais inalterados
+- [x] SecurityConfig: + RBAC para POST /simulacoes
+
+Já presente desde Fase 3.B (caq-compliance-svc):
+- [x] Logs imutáveis com chain SHA-256 sobre log_auditoria + endpoint /verificar (AuditChainService)
+
+Sprint 7.B (próxima):
+- [ ] Painel CACS-Fundeb / CME (Next.js — visão consolidada read-only com endpoint público + pareceres)
+- [ ] Simulações pré-definidas (presets): "tempo integral universal", "−5 alunos/turma EF", "+1 escola creche"
+- [ ] Cenários comparativos (3+ simulações lado-a-lado)
 
 ## Fase 8 — Frontend admin completo (paralelo às fases 2–7) — `web`
 

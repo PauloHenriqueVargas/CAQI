@@ -84,8 +84,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/caqi/parametros/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT,  "/api/v1/caqi/parametros/**").hasRole("ADMIN")
 
-                        // Operacional: cálculos e novas vigências de custo — GESTOR
+                        // Operacional: cálculos, simulações e novas vigências de custo — GESTOR
                         .requestMatchers(HttpMethod.POST, "/api/v1/caqi/calculos").hasRole("GESTOR")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/caqi/simulacoes").hasRole("GESTOR")
                         .requestMatchers(HttpMethod.POST, "/api/v1/caqi/insumos/*/custos").hasRole("GESTOR")
 
                         // Consulta: GETs no domínio CAQ — LEITOR

@@ -55,7 +55,16 @@ public class CaqCalculator {
     private final MatriculaRepository matriculaRepo;
     private final IndexadorService indexador;
 
+    /** Cálculo padrão usando dados reais do banco — sem overrides de simulação. */
     public ResultadoCalculoDto calcular(RequisicaoCalculoDto req) {
+        return calcular(req, Overrides.NONE);
+    }
+
+    /**
+     * Cálculo com overrides aplicados (Simulador "e se?"). Cada componente em
+     * Overrides substitui ou multiplica os dados reais — sem persistir.
+     */
+    public ResultadoCalculoDto calcular(RequisicaoCalculoDto req, Overrides overrides) {
         LocalDate dataReferencia = LocalDate.of(req.ano(), 1, 1);
         List<Insumo> todosInsumos = insumoRepo.findAll();
 
@@ -96,7 +105,7 @@ public class CaqCalculator {
 
                         Calculado c = calcularContribuicao(
                                 escolaIdStr, etapaCodigo, perfil, insumo, custo, params, totalAlunosEscola,
-                                dataReferencia);
+                                dataReferencia, overrides);
                         if (c == null) continue;
 
                         memoria.add(c.memoria());
@@ -124,12 +133,15 @@ public class CaqCalculator {
     private Calculado calcularContribuicao(
             String escolaIdStr, String etapaCodigo, String perfil,
             Insumo insumo, CustoInsumo custo, ParametroEtapa params, long totalAlunosEscola,
-            java.time.LocalDate dataReferencia
+            java.time.LocalDate dataReferencia, Overrides overrides
     ) {
         BigDecimal custoUnitarioOriginal = custo.getCustoUnitario();
-        BigDecimal custoUnitarioAjustado = indexador.custoAtualizado(custo, dataReferencia);
-        BigDecimal custoAnual = insumo.getQtdPadrao().multiply(custoUnitarioAjustado);
-        Divisor divisor = calcularDivisor(insumo, params, totalAlunosEscola, escolaIdStr);
+        BigDecimal custoUnitarioAjustado = indexador.custoAtualizado(custo, dataReferencia)
+                .multiply(overrides.custoMultiplier(insumo.getCodigo()));
+        BigDecimal qtdEfetiva = overrides.qtdPadrao(insumo.getCodigo()).orElse(insumo.getQtdPadrao());
+        BigDecimal custoAnual = qtdEfetiva.multiply(custoUnitarioAjustado);
+        Divisor divisor = calcularDivisor(insumo, params, totalAlunosEscola, escolaIdStr,
+                etapaCodigo, overrides);
         if (divisor == null) return null;
 
         BigDecimal custoAlunoAno = custoAnual.divide(divisor.valor(), 4, RoundingMode.HALF_UP);
@@ -143,7 +155,7 @@ public class CaqCalculator {
                 "[%s] R$ %s × %s %s / %s = R$ %s/aluno/ano%s",
                 perfil,
                 custoUnitarioAjustado.toPlainString(),
-                insumo.getQtdPadrao().toPlainString(),
+                qtdEfetiva.toPlainString(),
                 insumo.getUnidade(),
                 divisor.descricao(),
                 custoAlunoAno.toPlainString(),
@@ -153,18 +165,21 @@ public class CaqCalculator {
         return new Calculado(custoAlunoAno, new ItemMemoriaCalculoDto(
                 escolaIdStr, etapaCodigo, perfil,
                 insumo.getCodigo(), insumo.getNome(), insumo.getTipoAplicacao(),
-                insumo.getQtdPadrao(), custoUnitarioAjustado,
+                qtdEfetiva, custoUnitarioAjustado,
                 custoAnual, divisor.valor(), custoAlunoAno, baseCalculo
         ));
     }
 
     private record Divisor(BigDecimal valor, String descricao) {}
 
-    private Divisor calcularDivisor(Insumo insumo, ParametroEtapa params, long totalEscola, String escolaIdStr) {
+    private Divisor calcularDivisor(Insumo insumo, ParametroEtapa params, long totalEscola,
+                                    String escolaIdStr, String etapaCodigo, Overrides overrides) {
         return switch (insumo.getTipoAplicacao()) {
             case "por_aluno"  -> new Divisor(BigDecimal.ONE, "1 aluno");
-            case "por_turma"  -> new Divisor(params.getAlunosPorTurma(),
-                    params.getAlunosPorTurma().toPlainString() + " alunos/turma");
+            case "por_turma"  -> {
+                BigDecimal apt = overrides.alunosPorTurma(etapaCodigo).orElse(params.getAlunosPorTurma());
+                yield new Divisor(apt, apt.toPlainString() + " alunos/turma");
+            }
             case "por_escola" -> {
                 if (totalEscola == 0) {
                     log.warn("Escola {} sem matrículas ativas — pulando insumo {}", escolaIdStr, insumo.getCodigo());
