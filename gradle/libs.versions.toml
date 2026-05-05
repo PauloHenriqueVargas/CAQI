@@ -47,6 +47,9 @@ opentelemetry-exporter-otlp = { module = "io.opentelemetry:opentelemetry-exporte
 # MFA TOTP (RFC 6238) — Google Authenticator, Aegis, etc.
 totp = { module = "dev.samstevens.totp:totp", version.ref = "totp" }
 
+# CSV (Jackson dataformat) — Censo Escolar/INEP é Latin-1, ;-separated
+jackson-dataformat-csv = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-csv" }
+
 # Tests
 testcontainers-postgresql = { module = "org.testcontainers:postgresql", version.ref = "testcontainers" }
 testcontainers-rabbitmq = { module = "org.testcontainers:rabbitmq", version.ref = "testcontainers" }

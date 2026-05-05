@@ -11,9 +11,13 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
-        default_schema: escolar
   flyway:
     enabled: false
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 200MB
+      max-request-size: 200MB
   rabbitmq:
     host: ${RABBITMQ_HOST:localhost}
     port: ${RABBITMQ_PORT:5672}
@@ -58,3 +62,22 @@ caqi:
   tenant:
     municipio-id: ${CAQI_MUNICIPIO_ID:000000}
     municipio-nome: ${CAQI_MUNICIPIO_NOME:Municipio Exemplo}
+    # Código IBGE 7-dígitos do município, usado para filtrar Censo INEP por
+    # CO_MUNICIPIO. Ex.: Palmas/TO = 1721000, São Paulo/SP = 3550308.
+    cod-municipio-ibge: ${CAQI_COD_MUNICIPIO_IBGE:0000000}
+  censo:
+    # Limite por arquivo de Censo (em bytes). INEP publica ESCOLAS.csv
+    # tipicamente 30-80MB para o Brasil inteiro; deixamos margem.
+    max-file-size-bytes: ${CAQI_CENSO_MAX_FILE_SIZE_BYTES:209715200}
+  security:
+    users:
+      # MVP — substituir por Gov.br OAuth2 + DB user store em produção
+      leitor:
+        username: ${CAQI_LEITOR_USERNAME:leitor}
+        password: ${CAQI_LEITOR_PASSWORD:trocar_em_prod}
+      gestor:
+        username: ${CAQI_GESTOR_USERNAME:gestor}
+        password: ${CAQI_GESTOR_PASSWORD:trocar_em_prod}
+      admin:
+        username: ${CAQI_ADMIN_USERNAME:admin}
+        password: ${CAQI_ADMIN_PASSWORD:trocar_em_prod}

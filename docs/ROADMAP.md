@@ -163,10 +163,32 @@ Sprint 5.A (concluída) — SIOPE export consolidado em `caq-financeiro-svc`:
 - [x] SiopeServiceTest unit (Mockito): 2 cenários — cenário-base seed (260k MDE / 230k pessoal / 10k capital, zero pendências) e cenário com falhas de classificação (5 pendências detectadas com severidades corretas)
 - [x] Limitação documentada: FNDE não tem API pública para upload — service produz JSON; conversão para layout DFCD/MIM-CC fica para 5.D se necessário
 
-Sprint 5.B (próxima — defer):
-- [ ] Censo Escolar/INEP — cliente HTTP para download do arquivo anual + parser CSV/XLS
-- [ ] Import para escolas/matriculas no caq-escolar-svc
-- [ ] Sincronização com cálculo CAQ (engine recalcula quando matrículas atualizam)
+Sprint 5.B (concluída) — Censo Escolar/INEP no `caq-escolar-svc`:
+- [x] **V0009** — `censo_importacao` (audit trail por hash) + `censo_matricula_resumo` (count por escola/etapa/ano) + partial unique index em `escola(inep_id) WHERE inep_id IS NOT NULL`
+- [x] **CensoEscolarParser** com Jackson `CsvMapper` em **streaming** (não carrega arquivo em memória) — Latin-1 (ISO-8859-1), separador `;`, header inference; calcula SHA-256 e conta bytes em paralelo via `DigestInputStream` + `FilterInputStream`. Tolera colunas faltando ou em ordem diferente (mixin `@JsonIgnoreProperties(ignoreUnknown=true)`)
+- [x] **CensoEscolaRecord** record — subset do layout INEP (NU_ANO_CENSO, CO_ENTIDADE, NO_ENTIDADE, CO_MUNICIPIO, TP_DEPENDENCIA, TP_LOCALIZACAO, TP_SITUACAO_FUNCIONAMENTO, QT_MAT_INF_CRE/PRE, QT_MAT_FUND_AI/AF, QT_MAT_MED, QT_MAT_EJA, QT_MAT_PROF) + helpers `ehMunicipal/emAtividade/localizacaoTexto`
+- [x] **CensoEtapaMapper** — tradução QT_MAT_* → códigos canônicos do engine: CRECHE/PRE/EF1/EF2/EM/EJA/PROF
+- [x] **CensoImportService** transacional:
+  - Filtra por `cod-municipio-ibge` (tenant config) + `TP_DEPENDENCIA=3` (Municipal) + `TP_SITUACAO=1` (em atividade)
+  - Idempotência por `(ano + sha256 + cod_municipio_ibge)` — re-import retorna resultado anterior sem reescrever
+  - Upsert escola por `inep_id` (atualiza nome/rede/localizacao/situacao)
+  - Insere `censo_matricula_resumo` por (escola, etapa, ano) só quando `qtd_alunos > 0`
+  - Modo `dryRun`: parse + filtro acontecem mas nada é persistido (status `simulada`)
+  - Bloqueia se `cod-municipio-ibge` for inválido (não-7-dígitos ou `0000000`)
+- [x] **CensoController** — `POST /import` (multipart, ADMIN), `POST /dry-run` (multipart, GESTOR), `GET /importacoes` + `GET /importacoes/{id}` (LEITOR); tudo Springdoc-anotado
+- [x] **SecurityConfig** + **SecurityProperties** (3 roles LEITOR/GESTOR/ADMIN, mesmo modelo do engine/financeiro), Basic Auth + RBAC declarativo, endpoints públicos (health, swagger)
+- [x] **TenantProperties** + `caqi.tenant.cod-municipio-ibge` config (env `CAQI_COD_MUNICIPIO_IBGE`)
+- [x] `application.yml`: removido `default_schema: escolar`; adicionado `spring.servlet.multipart.max-file-size=200MB` (Censo INEP típico 30-80MB)
+- [x] Lib **`com.fasterxml.jackson.dataformat:jackson-dataformat-csv`** adicionada via version catalog
+- [x] **CensoEscolarParserTest** (7 testes): parse fixture 8 registros + hash determinístico + idempotência hash + acentos Latin-1 preservados + helpers + CSV mínimo + stream vazio (SHA-256 e3b0...)
+- [x] **CensoImportServiceTest** (7 testes Mockito): import completo (4 escolas, 1460 matrículas, 10 resumos), agregação por etapa (CRECHE=185 PRE=350 EF1=500 EF2=410 EJA=15), dry-run não persiste, idempotência retorna sem reescrever, upsert por inep_id, cod-ibge inválido falha, município ≠ alvo zera filtrados
+- [x] **Fixture** `src/test/resources/censo/ESCOLAS_FIXTURE.csv` — 8 escolas representando todos os caminhos de filtro (municipal/estadual/privada/outro município/extinta/rural)
+
+Sprint 5.B (defer):
+- [ ] Cliente HTTP para download automático do ZIP anual INEP (`https://download.inep.gov.br/dados_abertos/microdados_censo_escolar_*.zip`) com unzip streaming + retry — atualmente o operador faz upload manual via UI
+- [ ] Importer para MATRICULA_*.csv (microdados aluno-level) — popularia tabela `matricula` operacional
+- [ ] Importer para DOCENTES_*.csv → `pessoa_servidor`
+- [ ] Sincronização CAQ: trigger evento `caqi.censo.importado.{municipioId}` consumido pelo engine para recalcular CAQ das escolas afetadas (decisão pendente: usar contagens Censo como fallback quando `matricula` operacional não estiver populada?)
 
 Sprint 5.C (próxima — defer):
 - [ ] Analytics layer dbt — modelos staging/intermediate/marts em `analytics/`

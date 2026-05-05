@@ -10,6 +10,8 @@ dependencies {
     implementation(libs.spring.boot.starter.data.jpa)
     implementation(libs.spring.boot.starter.validation)
     implementation(libs.spring.boot.starter.amqp)
+    implementation(libs.spring.boot.starter.security)
+    implementation(libs.jackson.dataformat.csv)
     runtimeOnly(libs.postgresql)
     implementation(libs.springdoc.openapi.starter.webmvc.ui)
     implementation(libs.spring.cloud.starter.circuitbreaker.resilience4j)
