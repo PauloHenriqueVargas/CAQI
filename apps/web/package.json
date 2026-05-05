@@ -9,7 +9,9 @@
     "start": "next start -p 3000",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "test:e2e:install": "playwright install --with-deps chromium"
   },
   "dependencies": {
     "next": "14.2.15",
@@ -47,6 +49,8 @@
     "vitest": "2.1.2",
     "@vitejs/plugin-react": "4.3.2",
     "@testing-library/react": "16.0.1",
-    "@testing-library/jest-dom": "6.5.0"
+    "@testing-library/jest-dom": "6.5.0",
+    "@playwright/test": "1.48.0",
+    "@axe-core/playwright": "4.10.0"
   }
 }

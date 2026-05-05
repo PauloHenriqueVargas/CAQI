@@ -46,6 +46,12 @@ next-env.d.ts
 .swc/
 coverage/
 
+# --- Playwright ---
+apps/web/playwright-report/
+apps/web/test-results/
+apps/web/blob-report/
+apps/web/.playwright/
+
 # --- Python (analytics/dbt eventual) ---
 __pycache__/
 *.py[cod]

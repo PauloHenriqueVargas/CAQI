@@ -264,9 +264,18 @@ Sprint 8.B (parcial 3 — concluída): CRUD UI completo — fornecedores, receit
 - [x] `lib/types.ts`: + ReceitaDto, DespesaDto, FonteRecursoDto + constantes ORIGENS_RECEITA, SIOPE_GRUPOS
 - [x] Nav atualizada com Receitas, Despesas, Fornecedores
 
+Sprint 8.C (concluída) — E2E + WCAG no CI:
+- [x] **Playwright 1.48** + **@axe-core/playwright 4.10** adicionados como devDeps
+- [x] `playwright.config.ts`: webServer `next start` automático, `baseURL` configurável via `E2E_BASE_URL`, retries=2 em CI, traces/videos retidos em falha, projeto `chromium` único (browsers extras = mais tempo de CI sem ganho de cobertura)
+- [x] `tests/e2e/fixtures/axe-helper.ts`: `runAxe(page, testInfo)` com tags `wcag2a/wcag2aa/wcag21a/wcag21aa`; relatório JSON anexado a cada teste; falha imprime regra+nodes
+- [x] **`tests/e2e/login.spec.ts`** (7 testes): renderização do form, autocomplete correto (a11y/UX), validação HTML5 (campo `required`), normalização do MFA (uppercase + alphanum), erro genérico em backend down (sem enumeração), axe-core na tela inicial e após erro
+- [x] **`tests/e2e/redirect.spec.ts`** (5 testes): GET `/` → /login, `/dashboard` / `/despesas` / `/profile/mfa` → `/login?callbackUrl=...` (preserva), tela de login com callbackUrl é WCAG-compliant
+- [x] **CI job `web-e2e`** em `.github/workflows/ci.yml`: depende de `web` (lint/build prévio), instala Playwright com cache de browsers, faz build, roda testes; sobe artifacts `playwright-report` (sempre) e `playwright-traces` (só em falha) por 14 dias
+- [x] `.gitignore`: `apps/web/playwright-report/`, `test-results/`, `blob-report/`, `.playwright/`
+- [x] `tests/e2e/README.md` documenta escopo (rotas públicas), justifica a delimitação (CI não sobe os 4 microserviços) e ensina como rodar contra staging via `E2E_BASE_URL`
+
 Sprint 8.B (restante — defer):
-- [ ] Acessibilidade WCAG 2.1 AA — auditoria com axe-core no CI
-- [ ] Tests E2E com Playwright (login → dashboard → cálculo → notificação)
+- [ ] E2E das telas autenticadas (precisa stack completo via docker-compose ou ambiente de homologação)
 
 ## Fase 9 — Hardening produção
 
