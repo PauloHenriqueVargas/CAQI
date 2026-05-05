@@ -51,6 +51,7 @@ apps/web/playwright-report/
 apps/web/test-results/
 apps/web/blob-report/
 apps/web/.playwright/
+apps/web/tests/e2e/.auth/
 
 # --- Python (analytics/dbt eventual) ---
 __pycache__/

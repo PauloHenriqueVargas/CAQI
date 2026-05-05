@@ -427,8 +427,19 @@ Sprint 8.C (concluída) — E2E + WCAG no CI:
 - [x] `.gitignore`: `apps/web/playwright-report/`, `test-results/`, `blob-report/`, `.playwright/`
 - [x] `tests/e2e/README.md` documenta escopo (rotas públicas), justifica a delimitação (CI não sobe os 4 microserviços) e ensina como rodar contra staging via `E2E_BASE_URL`
 
-Sprint 8.B (restante — defer):
-- [ ] E2E das telas autenticadas (precisa stack completo via docker-compose ou ambiente de homologação)
+Sprint 8.D (concluída) — E2E telas autenticadas com mock backend:
+- [x] **Mock backend** `tests/e2e/mock-backend/server.mjs` — 4 servidores Node.js stdlib em portas 9991-9994 (engine/financeiro/escolar/compliance) servindo fixtures JSON determinísticas. Boot ~100ms vs ~90s do docker-compose Spring; CORS preflight + Cache-Control + Basic Auth opcional (`/api/v1/**` exigem credencial; `/api/public/**` e `/actuator/health` não)
+- [x] **Validação Basic Auth** no mock — somente users `admin_test/gestor_test/leitor_test` aceitos (qualquer senha); usuários inválidos recebem 401 + `WWW-Authenticate: Basic realm="caqi"`. Garante que `login.spec.ts` ainda testa a rejeição de credenciais inválidas
+- [x] **Playwright config** com **2 webServers em paralelo** (mock + Next.js) e **2 projects** (`public` + `authenticated`); o mock-backend tem health-check em `/api/v1/health` que o Playwright aguarda antes de prosseguir
+- [x] **`global-setup.ts`** — antes da suíte autenticada, faz login UI uma vez (admin_test) e salva cookie de sessão NextAuth em `tests/e2e/.auth/admin.json` (gitignored). Specs autenticados carregam o storage state via project config — sem refazer login a cada teste
+- [x] **`authenticated.spec.ts`** (14 testes): dashboard renderiza KPIs, /calculos lista, /calculos/1 memória item-a-item (PES-001 + MOB-001), /fundeb mostra 3 gauges com CUMPRE, /simulacoes lista preset "tempo_integral_universal" + apply preset → resultado inline com "+19,14%", /notificacoes mostra VAAT, /despesas + /contratos + /profile/mfa renderizam shell, **logout** clica "Sair" → redirect /login; **4 axe-core scans WCAG 2.1 AA** (dashboard, fundeb, simulacoes, calculos)
+- [x] **`.gitignore`** atualizado para `apps/web/tests/e2e/.auth/`
+- [x] **README.md** dos testes E2E refeito explicando: 2 projects (public/authenticated), mock backend (vantagens vs docker-compose), global setup, como rodar localmente vs staging real (`E2E_BASE_URL`)
+- [x] **CI**: timeout do job `web-e2e` aumentado de 20→25 minutos (mock backend + auth setup adicionam ~30s)
+
+Sprint 8.B (defer):
+- [ ] **E2E real-stack opcional** — variante do CI que faz `docker compose up` antes do Playwright para testar contra Spring Boot real, validando contratos de API end-to-end (lento — ~3-5 min — rodar só em PRs com label `e2e-real`)
+- [ ] **Visual regression** com Playwright snapshots (Percy alternativo) para detectar regressão de layout em changes de Tailwind/componentes
 
 ## Fase 9 — Hardening produção
 
