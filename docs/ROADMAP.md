@@ -186,9 +186,27 @@ Sprint 5.B (concluída) — Censo Escolar/INEP no `caq-escolar-svc`:
 
 Sprint 5.B (defer):
 - [ ] Cliente HTTP para download automático do ZIP anual INEP (`https://download.inep.gov.br/dados_abertos/microdados_censo_escolar_*.zip`) com unzip streaming + retry — atualmente o operador faz upload manual via UI
-- [ ] Importer para MATRICULA_*.csv (microdados aluno-level) — popularia tabela `matricula` operacional
 - [ ] Importer para DOCENTES_*.csv → `pessoa_servidor`
 - [ ] Sincronização CAQ: trigger evento `caqi.censo.importado.{municipioId}` consumido pelo engine para recalcular CAQ das escolas afetadas (decisão pendente: usar contagens Censo como fallback quando `matricula` operacional não estiver populada?)
+
+Sprint 5.D (concluída) — Microdados aluno-level (MATRICULA_*.csv) com pseudonimização LGPD:
+- [x] **V0012** cria `censo_matricula` (BIGSERIAL, FK importacao + escola, ano, id_matricula_inep, **id_aluno_hash CHAR(64)**, escola_inep, etapa_codigo, tp_etapa_ensino, idade, tp_sexo, tp_cor_raca, tp_zona_residencial, in_necessidade_especial, necessidades_codigos TEXT) + 4 índices (escola, ano+etapa, demografia, NEE-only partial); estende `censo_importacao` com `subtipo_arquivo` e `matriculas_inseridas`
+- [x] **`CensoMatriculaRecord`** record com 20 campos do layout INEP + helpers `ehDependenciaMunicipal()`, `inNecessidadeEspecialBool()`, `necessidadesCsv()` (concatena IN_CEGUEIRA/SURDEZ/AUTISMO/etc. em CSV legível)
+- [x] **`CensoEtapaEnsinoMapper`** — tradução TP_ETAPA_ENSINO (1-77) → códigos canônicos do engine (CRECHE/PRE/EF1/EF2/EM/EJA/PROF), retornando null para etapas não relevantes (matrícula descartada)
+- [x] **`CensoMatriculaParser`** — Latin-1 + `;` + streaming + SHA-256 + bytes, mesmo padrão do `CensoEscolarParser` (compartilha `CENSO_CHARSET` e `CENSO_SEPARATOR`)
+- [x] **`CensoMatriculaImportService`** transacional:
+  - Filtra `cod_municipio_ibge` + `TP_DEPENDENCIA_ADM=3` + etapa mapeável
+  - **Pseudonimiza `ID_ALUNO`** via `SHA-256(id || salt)` onde salt vem de `caqi.censo.pseudonimizacao-salt` (≥8 bytes, validado; rejeita salt curto)
+  - **Batch insert** de 1000 records — suporta arquivos com milhões de linhas sem estouro de heap
+  - Cache de `escola_id` por `inep_id` evita N selects no loop
+  - Modo `dryRun` computa estatísticas sem persistir
+  - Acumulador in-memory para `resumoMatriculas` por etapa
+- [x] **`CensoController`**: `POST /import-matriculas` (ADMIN), `POST /dry-run-matriculas` (GESTOR) — extrai helper `preExec()` para deduplicar validação ano/username/nome
+- [x] **SecurityConfig**: + RBAC `/import-matriculas` ADMIN, `/dry-run-matriculas` GESTOR
+- [x] `application.yml`: `caqi.censo.pseudonimizacao-salt` config; `multipart.max-file-size=2GB` (MATRICULA Brasil-inteiro pode chegar a ~5GB; recomendado dividir por região)
+- [x] **DPIA atualizado** (§3 + §3.2): tabela `censo_matricula` listada como dado sensível pseudonimizado de criança/adolescente; documenta hipótese de tratamento (LGPD art. 11 §1° I+IV — políticas públicas de educação) + obrigatoriedade de rotação do salt em incidente
+- [x] **`CensoMatriculaImportServiceTest`** (9 cenários Mockito): import com fixture 12 linhas filtra para 8 válidas (CRECHE=2 EF1=3 EF2=1 EM=1 EJA=1, NEE=2 com DEFICIENCIA_INTELECTUAL+AUTISMO); pseudonimização hex 64-char nunca em claro; salt diferente gera hash diferente (rotação); NEE flags codificadas corretamente; dry-run não persiste; salt curto rejeitado; cod-IBGE inválido rejeitado; mapeamento de 7 etapas + null para 77 e null
+- [x] **Fixture** `MATRICULA_FIXTURE.csv` com 12 alunos representando todos os caminhos: 2 creches + 3 EF1 + 1 EF2 + 1 EM + 1 EJA municipais Palmas + 1 estadual + 1 privada + 1 outro município + 1 etapa não mapeada
 
 Sprint 5.C (concluída) — Camada analítica dbt em `analytics/`:
 - [x] **Skeleton dbt-core 1.8 + dbt-postgres** — `dbt_project.yml`, `profiles.example.yml`, `packages.yml` (dbt_utils 1.3), `requirements.txt` (versões pinadas), `.gitignore`, `README.md` com setup local e produção

@@ -25,6 +25,7 @@ import java.util.List;
 public class CensoController {
 
     private final CensoImportService importService;
+    private final CensoMatriculaImportService matriculaImportService;
     private final CensoImportacaoRepository importacaoRepo;
 
     @Operation(summary = "Importa ESCOLAS_*.csv do Censo INEP",
@@ -53,6 +54,30 @@ public class CensoController {
         return ResponseEntity.ok(executar(arquivo, anoCenso, true, user));
     }
 
+    @Operation(summary = "Importa MATRICULA_*.csv (microdados aluno-level)",
+               description = "Upload do microdado MATRICULA do INEP. Pseudonimiza ID_ALUNO via " +
+                             "SHA-256 com salt do tenant (LGPD). Filtra por município + dependência municipal " +
+                             "+ etapa mapeável. Streaming + batch insert (1000/commit) — suporta arquivos grandes.")
+    @PostMapping(value = "/import-matriculas", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<CensoImportResultDto> importarMatriculas(
+            @Parameter(description = "Arquivo MATRICULA_*.csv do Censo INEP", required = true)
+            @RequestParam("arquivo") MultipartFile arquivo,
+            @RequestParam(value = "anoCenso", required = false) Integer anoCenso,
+            @AuthenticationPrincipal UserDetails user
+    ) throws IOException {
+        return ResponseEntity.ok(executarMatriculas(arquivo, anoCenso, false, user));
+    }
+
+    @Operation(summary = "Dry-run de MATRICULA_*.csv (parse + pseudonimização sem persistir)")
+    @PostMapping(value = "/dry-run-matriculas", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<CensoImportResultDto> dryRunMatriculas(
+            @RequestParam("arquivo") MultipartFile arquivo,
+            @RequestParam(value = "anoCenso", required = false) Integer anoCenso,
+            @AuthenticationPrincipal UserDetails user
+    ) throws IOException {
+        return ResponseEntity.ok(executarMatriculas(arquivo, anoCenso, true, user));
+    }
+
     @Operation(summary = "Lista importações Censo (mais recentes primeiro)")
     @GetMapping("/importacoes")
     public List<CensoImportacaoDto> listar(@RequestParam(required = false) Integer anoCenso) {
@@ -73,6 +98,21 @@ public class CensoController {
 
     private CensoImportResultDto executar(MultipartFile arquivo, Integer anoCenso,
                                            boolean dryRun, UserDetails user) throws IOException {
+        var p = preExec(arquivo, anoCenso, user, "ESCOLAS.csv");
+        try (var stream = arquivo.getInputStream()) {
+            return importService.importar(stream, p.nome(), p.ano(), dryRun, p.username());
+        }
+    }
+
+    private CensoImportResultDto executarMatriculas(MultipartFile arquivo, Integer anoCenso,
+                                                     boolean dryRun, UserDetails user) throws IOException {
+        var p = preExec(arquivo, anoCenso, user, "MATRICULA.csv");
+        try (var stream = arquivo.getInputStream()) {
+            return matriculaImportService.importar(stream, p.nome(), p.ano(), dryRun, p.username());
+        }
+    }
+
+    private PreExec preExec(MultipartFile arquivo, Integer anoCenso, UserDetails user, String defaultNome) {
         if (arquivo == null || arquivo.isEmpty()) {
             throw new IllegalArgumentException("Arquivo não fornecido ou vazio.");
         }
@@ -81,9 +121,9 @@ public class CensoController {
             throw new IllegalArgumentException("anoCenso fora do intervalo razoável (2007-" + (Year.now().getValue() + 1) + ")");
         }
         String username = user != null ? user.getUsername() : "system";
-        String nome = arquivo.getOriginalFilename() != null ? arquivo.getOriginalFilename() : "ESCOLAS.csv";
-        try (var stream = arquivo.getInputStream()) {
-            return importService.importar(stream, nome, ano, dryRun, username);
-        }
+        String nome = arquivo.getOriginalFilename() != null ? arquivo.getOriginalFilename() : defaultNome;
+        return new PreExec(ano, username, nome);
     }
+
+    private record PreExec(int ano, String username, String nome) {}
 }

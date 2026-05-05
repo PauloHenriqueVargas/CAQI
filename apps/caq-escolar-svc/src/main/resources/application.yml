@@ -16,8 +16,8 @@ spring:
   servlet:
     multipart:
       enabled: true
-      max-file-size: 200MB
-      max-request-size: 200MB
+      max-file-size: 2GB
+      max-request-size: 2GB
   rabbitmq:
     host: ${RABBITMQ_HOST:localhost}
     port: ${RABBITMQ_PORT:5672}
@@ -67,8 +67,12 @@ caqi:
     cod-municipio-ibge: ${CAQI_COD_MUNICIPIO_IBGE:0000000}
   censo:
     # Limite por arquivo de Censo (em bytes). INEP publica ESCOLAS.csv
-    # tipicamente 30-80MB para o Brasil inteiro; deixamos margem.
-    max-file-size-bytes: ${CAQI_CENSO_MAX_FILE_SIZE_BYTES:209715200}
+    # tipicamente 30-80MB para o Brasil inteiro; MATRICULA pode chegar a
+    # 2GB descompactado — recomendado dividir por região.
+    max-file-size-bytes: ${CAQI_CENSO_MAX_FILE_SIZE_BYTES:2147483648}
+    # Salt da pseudonimização do ID_ALUNO (LGPD) — DEVE ser único por
+    # tenant e mantido em segredo. Rotação obrigatória em incidente.
+    pseudonimizacao-salt: ${CAQI_CENSO_PSEUDONIMIZACAO_SALT:trocar_em_prod_salt_minimo_8_chars}
   security:
     users:
       # MVP — substituir por Gov.br OAuth2 + DB user store em produção

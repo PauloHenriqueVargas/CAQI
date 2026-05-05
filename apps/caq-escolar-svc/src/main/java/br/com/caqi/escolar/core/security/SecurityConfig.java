@@ -72,7 +72,9 @@ public class SecurityConfig {
 
                         // ── RBAC: Censo Escolar ──
                         .requestMatchers(HttpMethod.POST, "/api/v1/escolar/censo/import").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/escolar/censo/import-matriculas").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/v1/escolar/censo/dry-run").hasRole("GESTOR")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/escolar/censo/dry-run-matriculas").hasRole("GESTOR")
                         .requestMatchers(HttpMethod.GET,  "/api/v1/escolar/censo/**").hasRole("LEITOR")
 
                         // Demais endpoints autenticados

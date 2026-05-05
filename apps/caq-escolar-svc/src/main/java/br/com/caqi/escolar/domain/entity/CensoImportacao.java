@@ -63,4 +63,12 @@ public class CensoImportacao {
 
     @Column(name = "criado_por", nullable = false, length = 60)
     private String criadoPor;
+
+    /** ESCOLAS (V0009) ou MATRICULA (V0012). Null = ESCOLAS (legado). */
+    @Column(name = "subtipo_arquivo", length = 20)
+    private String subtipoArquivo;
+
+    /** Apenas para subtipo=MATRICULA — nº de linhas aluno-level inseridas. */
+    @Column(name = "matriculas_inseridas", nullable = false)
+    private Integer matriculasInseridas = 0;
 }

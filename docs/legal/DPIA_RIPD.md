@@ -48,6 +48,28 @@ Hospedagem: 1 instância isolada por município (Helm release dedicado em namesp
 | `usuario` | nome, perfil, email funcional | Não | Não |
 | `fornecedor` | CNPJ (PJ — não PII pessoal), nome PJ, município | Não (PJ) | Não |
 | `log_auditoria` | usuario_id (referência), ação, timestamp | Não | Não |
+| `censo_matricula` (V0012) | id_aluno_hash (SHA-256+salt), idade, sexo, cor/raça, NEE, escola | **SIM** (cor/raça, NEE) | **SIM** — pseudonimizado |
+
+### 3.2. Censo Escolar — pseudonimização e minimização
+
+A importação de microdados Censo INEP (Sprint 5.D) processa dados de alunos
+sob forte minimização:
+
+- **`id_aluno_hash`**: SHA-256(`ID_ALUNO_INEP` ‖ `salt`), onde o salt é
+  único por tenant e armazenado em segredo (env `CAQI_CENSO_PSEUDONIMIZACAO_SALT`,
+  ≥8 bytes; rotação obrigatória em incidente). Reidentificação direta via
+  cruzamento com bases externas que conhecem `ID_ALUNO_INEP` não é possível
+  sem o salt — logo, é **dado pseudonimizado** (LGPD art. 5°, V).
+- **Sem nome, sem CPF, sem data de nascimento exata** — apenas `idade`
+  agregada (`NU_IDADE_REFERENCIA` do INEP) e flags categóricas.
+- **Cor/raça** (`tp_cor_raca`) e **NEE** (`in_necessidade_especial` + flags
+  `IN_*`) são dados sensíveis (LGPD art. 5° II), porém:
+  - código numérico oficial INEP, sem texto livre
+  - usados exclusivamente em marts agregados em `analytics_marts`
+  - **nunca expostos em endpoints públicos** (`/api/public/transparencia/**`)
+- **Hipótese de tratamento**: art. 11 §1° I + IV (políticas públicas de
+  educação, com publicidade do conjunto agregado e pseudonimização do dado
+  individual).
 
 **O sistema NÃO armazena** dados sensíveis (saúde, biometria, religião, orientação política/sexual, etc.) e NÃO realiza decisões automatizadas com efeitos jurídicos.
 
