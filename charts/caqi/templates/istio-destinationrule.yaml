@@ -1,0 +1,22 @@
+{{- if .Values.istio.enabled }}
+# DestinationRule force ISTIO_MUTUAL em chamadas saindo dos serviços
+# para qualquer destino dentro do mesh. Combinado com PeerAuthentication
+# STRICT do lado do servidor, garante que toda comunicação inter-serviço
+# seja autenticada e criptografada com certificado emitido pelo
+# istiod (rotação automática).
+#
+# Outbound para fora do mesh (PostgreSQL externo, RabbitMQ, S3) precisa
+# de ServiceEntry separada com DISABLE/SIMPLE conforme o caso.
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: {{ include "caqi.fullname" . }}-mtls-default
+  labels:
+    {{- include "caqi.labels" . | nindent 4 }}
+spec:
+  # Match qualquer host dentro do cluster
+  host: "*.{{ .Release.Namespace }}.svc.cluster.local"
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+{{- end }}

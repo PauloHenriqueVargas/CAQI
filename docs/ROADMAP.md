@@ -494,10 +494,19 @@ Sprint 9.B (parcial 4 — concluída): Backup codes para recuperação de MFA
 - [x] `lib/types.ts` atualizado
 - [x] MfaServiceTest cobre 9 cenários (setup vazio em backup, enable gera 8 únicos, TOTP, backup one-time-use, normalização, rejeita formato inválido, regenerate, disable, ciclo)
 
+Sprint 9.C (concluída) — mTLS Istio + checklist pen-test + scan:
+- [x] **`charts/caqi/templates/istio-peerauthentication.yaml`** — `PeerAuthentication` STRICT em todo o namespace (pods sem sidecar não conseguem aceitar conexões dos serviços CAQi)
+- [x] **`charts/caqi/templates/istio-destinationrule.yaml`** — `DestinationRule` `ISTIO_MUTUAL` para tráfego intra-mesh (`*.<ns>.svc.cluster.local`)
+- [x] **`values.yaml`** ganha bloco `istio: { enabled: false, mtlsMode: STRICT }` (default off para não quebrar clusters sem Istio)
+- [x] **`docs/operacao/MTLS_ISTIO.md`** — guia de migração de PERMISSIVE → STRICT, troubleshooting, custo computacional (~250m CPU + 400Mi RAM extras), tráfego para fora do mesh (ServiceEntry para Postgres/RabbitMQ/S3), defer AuthorizationPolicy granular para Sprint 9.D
+- [x] **`docs/operacao/PEN_TEST_CHECKLIST.md`** — roteiro OWASP Top 10 (2021) com casos específicos do domínio: IDOR em calculos, bypass RBAC, path traversal upload Censo, bypass bloqueador empenho, salt pseudonimização Censo, JWT NextAuth, cadeia auditoria, headers segurança; controles LGPD/LRF/Lei 14.133; cadência (quadrimestral interno + anual externo); pré-requisitos (autorização formal escrita Lei 12.737/2012); ferramentas recomendadas + reportagem (achado >=MEDIUM ao DPO + ata CACS-Fundeb)
+- [x] **`scripts/security-scan.sh`** — wrapper local com 7 seções: gitleaks, semgrep OWASP, OWASP Dependency-Check, npm audit, trivy config, kubescape K8s, checks customizados (.env, senhas literais, CPF em arquivos não-test). Skip silencioso se ferramenta não instalada; exit 1 em achado HIGH/CRITICAL
+- [x] **CI job `security`** em `.github/workflows/ci.yml` — gitleaks-action (varre histórico) + trivy-action `scan-type: config` (Dockerfiles + Helm + IaC) com severity HIGH/CRITICAL; warn-only no MVP (`exit-code: 0`), subir para 1 em prod
+
 Sprint 9.B (restante — defer):
 - [ ] Auth Gov.br OAuth2 — NextAuth provider customizado + Spring Resource Server validando JWT (precisa credenciais Gov.br reais para testar)
-- [ ] mTLS entre serviços (Istio/Linkerd) — opcional
-- [ ] Pen-test interno (OWASP Top 10, IDOR)
+- [ ] Pen-test externo anual com consultoria sob NDA
+- [ ] AuthorizationPolicy Istio granular (Sprint 9.D) — engine só aceita do web/compliance, financeiro só do web/engine/compliance, escolar só do web /import; defer princípio do menor privilégio em rede
 
 ## Cronograma indicativo
 

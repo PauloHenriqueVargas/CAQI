@@ -1,0 +1,18 @@
+{{- if .Values.istio.enabled }}
+# PeerAuthentication aplica mTLS STRICT em todo tráfego pod-to-pod do
+# namespace. Pods sem sidecar Istio injetado não conseguem se comunicar
+# (defesa em profundidade contra pods rogues).
+#
+# Pré-requisito: o cluster já tem Istio instalado e o namespace tem
+# label `istio-injection=enabled` (gerenciado fora deste chart).
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: {{ include "caqi.fullname" . }}-mtls
+  labels:
+    {{- include "caqi.labels" . | nindent 4 }}
+spec:
+  # Aplica em todos os pods do namespace por seletor vazio.
+  mtls:
+    mode: {{ .Values.istio.mtlsMode | default "STRICT" | quote }}
+{{- end }}

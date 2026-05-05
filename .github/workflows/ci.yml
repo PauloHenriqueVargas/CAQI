@@ -296,3 +296,27 @@ jobs:
           if [ -n "$large" ]; then
             echo "ERRO: arquivos > 5 MB fora de docs/references/:"; echo "$large"; exit 1
           fi
+
+  # ──────────────────────────────────────────────────────────────────────
+  security:
+    name: Segurança — gitleaks + Trivy config
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # gitleaks varre histórico
+
+      - name: gitleaks (secrets)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Trivy — config (Dockerfiles + Helm + IaC)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: config
+          scan-ref: .
+          severity: CRITICAL,HIGH
+          exit-code: '0'   # warn-only no MVP; subir para 1 em prod
+          ignore-unfixed: true

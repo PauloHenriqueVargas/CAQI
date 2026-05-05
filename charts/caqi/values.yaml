@@ -155,6 +155,17 @@ dbt:
     requests: { cpu: 200m, memory: 512Mi }
     limits:   { cpu: 1000m, memory: 1024Mi }
 
+# === Istio (mTLS service mesh — opcional) ===
+# Liga em prod quando o cluster tem Istio instalado (operator ou ambient).
+# Pré-requisito externo ao chart: namespace deve ter label
+#   `istio-injection=enabled` (ou ser ambient mesh).
+# Documentação: docs/operacao/MTLS_ISTIO.md.
+istio:
+  enabled: false
+  # STRICT: rejeita conexões não-mTLS (recomendado em prod).
+  # PERMISSIVE: aceita ambos (útil em migração; transitar para STRICT).
+  mtlsMode: STRICT
+
 # === Ingress ===
 ingress:
   enabled: true
