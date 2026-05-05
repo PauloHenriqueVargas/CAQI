@@ -208,10 +208,39 @@ Sprint 6.A (concluída) — API pública LAI nos 3 serviços:
 - [x] Cache HTTP `max-age=300, public` em todas as respostas — reduz carga no portal
 - [x] LGPD: dados expostos são públicos por natureza (CNPJ PJ, valores agregados, contratos firmados, notificações). NÃO expõe folha individual, CPF, dados pessoais de aluno. Versão pública do SIOPE omite `pendencias` (auditoria interna).
 
-Sprint 6.B (próxima):
-- [ ] Frontend público no Next.js — rota `/transparencia` (sem auth) que consome os endpoints públicos via BFF
-- [ ] Acessibilidade WCAG 2.1 AA (axe-core)
-- [ ] Open Graph + sitemap.xml para SEO
+Sprint 6.B (concluída) — Portal público `/transparencia` em Next.js:
+- [x] **`lib/api-public.ts`** — fetcher server-only para `/api/public/transparencia/**` (sem injeção de credencial); usa `next: { revalidate: 300 }` para alinhar com o `Cache-Control: max-age=300, public` enviado pelos backends da Fase 6.A; **degradação graciosa**: erros logam mas retornam `null` (página decide como renderizar)
+- [x] **middleware.ts** atualizado: matcher exclui `/transparencia`, `/sitemap.xml` e `/robots.txt` da auth NextAuth
+- [x] **Route group `(public)`** com layout próprio (header brand + nav + skip-link "Pular para o conteúdo" + footer com bases legais LAI/LRF + link "Acesso administrativo" para `/login`); metadata override `robots: { index: true, follow: true }` (root layout é noindex)
+- [x] **6 páginas públicas** (todas Server Components com `dynamic = 'force-dynamic'`):
+  - `/transparencia` (landing) — KPIs do exercício corrente: vinculações conforme/atenção, qtd cálculos CAQ, valor global de contratos, qtd notificações abertas; seção "O que esta página publica" com escopo LAI/LGPD
+  - `/transparencia/fundeb?ano=N` — 3 gauges MDE/Fundeb70/VAAT15 + receitas/despesas em cards + dl/dd com base legal de cada vinculação; banner amigável quando backend down
+  - `/transparencia/contratos` — tabela Lei 14.133 com modalidade/objeto/valor/PNCP + valor agregado; nota sobre LGPD
+  - `/transparencia/despesas?ano=N` — 4 KPI cards (total/pessoal/capital/MDE) + nav de anos + tabela competência/natureza/grupo/valor
+  - `/transparencia/calculos` + `/calculos/[id]` — lista CAQi/CAQ/gap por escola e detalhe com **2 tabelas de memória** (perfil mínimo/adequado) item-a-item
+  - `/transparencia/notificacoes?ano=N` — lista por severidade/status com cores semânticas (info/warn/alta/critica), nav de anos, badges de status
+- [x] **SEO**:
+  - `app/sitemap.ts` (Next.js convention) — 6 URLs públicas com prioridades 0.7-1.0 e changeFrequency adequados
+  - `app/robots.ts` — Allow `/transparencia`, Disallow `/login /dashboard /calculos /contratos /despesas /receitas /fornecedores /simulacoes /notificacoes /fundeb /profile/ /api/ /_next/`
+  - `metadata.title.template = '%s · Transparência · CAQ/CAQi'` no layout público
+  - `metadata.description` em cada página (Fundeb, contratos, despesas, cálculos, notificações)
+- [x] **Acessibilidade WCAG 2.1 AA**:
+  - Skip-link com `sr-only focus:not-sr-only` para teclado
+  - Landmarks (`<header role>`, `<main id="conteudo" tabIndex={-1}>`, `<nav aria-label>`, `<footer>` implícito no `<footer>`)
+  - Heading hierarchy correta (h1 → h2 → h3 sem skip)
+  - Tabelas com `<caption className="sr-only">` + `<th scope="col">`
+  - `aria-current="page"` nos seletores de ano
+  - `<dl><dt><dd>` para definições de termos
+  - `role="status"` em mensagens de "sem dados"
+- [x] **`tests/e2e/transparencia.spec.ts`** (10 testes):
+  - Landing renderiza shell + KPIs com fallback "—" quando BFF down
+  - Skip-link recebe foco com Tab
+  - `/robots.txt` permite `/transparencia`, bloqueia `/login`+`/dashboard`, lista Sitemap
+  - `/sitemap.xml` contém 5 rotas filhas com tags `<urlset>`
+  - 5 subpáginas renderizam shell + heading mesmo com backend down
+  - Metadata `<meta name="robots">` na landing é `index/follow` (override)
+  - SEO: title e description corretos em `/fundeb`
+  - 4 axe-core scans (landing + fundeb + contratos + notificacoes) — WCAG 2.1 AA
 
 Sprint 6.C (próxima):
 - [ ] CronJob/scheduled task de publicação automática (LRF art. 48-A — até 24h após executado): grava em `publicacao_portal` (já existe na DDL V0001) com hash do conteúdo e timestamp
