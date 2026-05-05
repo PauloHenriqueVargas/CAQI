@@ -46,6 +46,7 @@ test.describe('Portal público /transparencia (sem auth)', () => {
     expect(body).toContain('/transparencia/despesas');
     expect(body).toContain('/transparencia/notificacoes');
     expect(body).toContain('/transparencia/publicacoes');
+    expect(body).toContain('/transparencia/conselhos');
   });
 
   test('Subpáginas renderizam shell + banner "sem dados" quando BFF retorna null', async ({ page }) => {
@@ -56,6 +57,7 @@ test.describe('Portal público /transparencia (sem auth)', () => {
       '/transparencia/calculos',
       '/transparencia/notificacoes',
       '/transparencia/publicacoes',
+      '/transparencia/conselhos',
     ]) {
       await page.goto(path);
       await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
@@ -102,6 +104,18 @@ test.describe('Portal público /transparencia (sem auth)', () => {
   test('WCAG 2.1 AA — /transparencia/publicacoes (LRF 48-A trail vazio)', async ({ page }, testInfo) => {
     await page.goto('/transparencia/publicacoes');
     await runAxe(page, testInfo);
+  });
+
+  test('WCAG 2.1 AA — /transparencia/conselhos (painel CACS-Fundeb/CME, sem dados)', async ({ page }, testInfo) => {
+    await page.goto('/transparencia/conselhos');
+    await expect(page.getByRole('heading', { name: /Painel CACS-Fundeb \/ CME/i })).toBeVisible();
+    await runAxe(page, testInfo);
+  });
+
+  test('Painel /conselhos descreve atribuições legais de CACS-Fundeb e CME', async ({ page }) => {
+    await page.goto('/transparencia/conselhos');
+    await expect(page.getByText(/Lei 14\.113\/2020/).first()).toBeVisible();
+    await expect(page.getByText(/LDB art\. 11/).first()).toBeVisible();
   });
 
   test('Filtros por tipo em /publicacoes preservam aria-current=page', async ({ page }) => {

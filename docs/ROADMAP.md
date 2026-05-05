@@ -290,10 +290,36 @@ Sprint 7.A (concluída) — Simulador "e se?" no caq-engine-svc:
 Já presente desde Fase 3.B (caq-compliance-svc):
 - [x] Logs imutáveis com chain SHA-256 sobre log_auditoria + endpoint /verificar (AuditChainService)
 
-Sprint 7.B (próxima):
-- [ ] Painel CACS-Fundeb / CME (Next.js — visão consolidada read-only com endpoint público + pareceres)
-- [ ] Simulações pré-definidas (presets): "tempo integral universal", "−5 alunos/turma EF", "+1 escola creche"
-- [ ] Cenários comparativos (3+ simulações lado-a-lado)
+Sprint 7.B (concluída) — Painel CACS-Fundeb/CME + presets de simulação:
+- [x] **Backend `SimulacaoPreset`** record + **`SimulacaoPresets`** catálogo (3 cenários):
+  - **`tempo_integral_universal`** — jornada estendida 8h: PES-001 ×1.50, SER-001 ×1.20, MAN-001 ×1.20, MAT-001 ×1.10; etapas CRECHE/PRE/EF1/EF2/EM; base CF/88 art. 206 IX, PNE meta 6, LDB art. 34 §2°
+  - **`menos_5_alunos_turma_ef`** — alunosPorTurma EF1=20, EF2=20 (era 25); sem aumento de despesa, eleva CAQ por aluno em ~25%; base LDB art. 25, PNE meta 7.5, Lei 14.113/2020 art. 12
+  - **`reforco_creche_pre`** — 2 docentes/turma em educação infantil (qtdPadrao PES-001 = 2); etapas CRECHE/PRE; base LDB art. 29-31, PNE meta 1, Resolução CNE/CEB 5/2009 art. 8°
+- [x] **Endpoints novos** em `SimulacoesController` (caq-engine-svc):
+  - `GET /api/v1/caqi/simulacoes/presets` (LEITOR) — lista presets com overrides + base legal
+  - `POST /api/v1/caqi/simulacoes/presets/{nome}` (GESTOR) body `{ ano, escolas }` — usa `etapasRecomendadas` do preset, monta `CenarioSimulacaoDto` e roda o simulador existente
+- [x] **SecurityConfig**: + RBAC `POST /presets/*` GESTOR (`GET /presets` cai no LEITOR genérico)
+- [x] **`SimulacaoPresetsTest`** (6 cenários): nomes únicos / base legal não-vazia / ao menos 1 override por preset; multiplicadores corretos para cada um dos 3; `porNome()` lookup com null/empty; sanity check das referências legais ("PNE meta 6", "LDB art. 25", "Resolução CNE/CEB 5/2009")
+- [x] **Frontend** — refeito `/simulacoes` (autenticado):
+  - Server Component fetcha presets de `/api/v1/caqi/simulacoes/presets`
+  - **`PresetCatalog`** + **`PresetCard`** (clientes) — cada card mostra título/descrição/etapas/impacto esperado/base legal + `<details>` com overrides aplicados + form inline (ano + escolas CSV) + tabela de resultado inline com cores semânticas (delta vermelho/verde)
+  - BFF `app/api/simular/presets/[nome]/route.ts` proxy autenticado
+  - Mantém atalho "Cenário customizado" → `/simulacoes/nova` (form livre)
+- [x] **Frontend público** `/transparencia/conselhos` — **Painel CACS-Fundeb / CME** consolidado:
+  - Banner com base legal (Lei 14.113/2020 art. 33-34 e LDB art. 11)
+  - 3 gauges Fundeb/MDE/VAAT (reaproveita component da Fase 8)
+  - 4 KPIs: notificações abertas (com count de críticas + cor variant), cálculos persistidos, valor contratado, qtd publicações LRF 48-A
+  - Lista das 5 alertas mais recentes com border-left por severidade
+  - Tabela das 5 últimas publicações com hash + abbr title (full hash)
+  - Seção "O que cabe a cada conselho" com `dl/dt/dd` descrevendo atribuições legais de CACS-Fundeb e CME
+  - **Tudo degradação graciosa** (`fetchPublic` retorna null se backend down → seções condicionais)
+- [x] Layout público: `Conselhos` adicionado ao nav após "Visão geral"
+- [x] **Sitemap.ts**: + `/transparencia/conselhos` priority 0.95 changeFrequency daily
+- [x] **E2E** (`transparencia.spec.ts`): subpáginas inclui `/conselhos`, novo teste WCAG axe-core, asserção da heading + atribuições legais ("Lei 14.113/2020", "LDB art. 11"); sitemap inclui `/conselhos`
+
+Sprint 7.B (defer):
+- [ ] **Cenários comparativos lado-a-lado** — UI para rodar 3+ simulações e visualizar matriz de comparação (tabela cruzada escola/etapa × cenário). Backend já suporta múltiplos POSTs; frontend precisa de design dedicado
+- [ ] **Pareceres formais do conselho** — workflow CRUD com draft/assinatura digital (ICP-Brasil opcional) e publicação automática via LRF 48-A; precisa schema novo (V0011 `parecer_conselho`) e fluxo dual de revisão
 
 ## Fase 8 — Frontend admin completo
 

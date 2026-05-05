@@ -87,6 +87,7 @@ public class SecurityConfig {
                         // Operacional: cálculos, simulações e novas vigências de custo — GESTOR
                         .requestMatchers(HttpMethod.POST, "/api/v1/caqi/calculos").hasRole("GESTOR")
                         .requestMatchers(HttpMethod.POST, "/api/v1/caqi/simulacoes").hasRole("GESTOR")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/caqi/simulacoes/presets/*").hasRole("GESTOR")
                         .requestMatchers(HttpMethod.POST, "/api/v1/caqi/insumos/*/custos").hasRole("GESTOR")
 
                         // MFA: cada usuário gerencia o próprio (basta estar autenticado)

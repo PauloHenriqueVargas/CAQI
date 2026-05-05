@@ -3,6 +3,7 @@ import Link from 'next/link';
 
 const NAV = [
   { href: '/transparencia',                label: 'Visão geral' },
+  { href: '/transparencia/conselhos',      label: 'Conselhos' },
   { href: '/transparencia/fundeb',         label: 'Fundeb / MDE' },
   { href: '/transparencia/calculos',       label: 'Cálculos CAQ' },
   { href: '/transparencia/contratos',      label: 'Contratos' },

@@ -204,6 +204,36 @@ export interface FonteRecursoDto {
   descricao: string | null;
 }
 
+/** Presets de simulação CACS-Fundeb/CME. */
+export interface SimulacaoPresetDto {
+  nome: string;
+  titulo: string;
+  descricao: string;
+  impactoEsperado: string;
+  baseLegal: string[];
+  alunosPorTurma: Record<string, Money>;
+  qtdPadraoInsumos: Record<string, Money>;
+  custoMultiplierInsumos: Record<string, Money>;
+  etapasRecomendadas: string[];
+}
+
+export interface DiferencaItemSimulacaoDto {
+  escolaId: string;
+  etapaCodigo: string;
+  caqiAtual: Money;
+  caqiSimulado: Money;
+  deltaCaqi: Money;
+  caqAtual: Money;
+  caqSimulado: Money;
+  deltaCaq: Money;
+  pctDeltaCaqi: Money;
+}
+
+export interface SimulacaoResultadoDto {
+  ano: number;
+  diferencas: DiferencaItemSimulacaoDto[];
+}
+
 /** Trilha de publicações LRF art. 48-A. */
 export interface PublicacaoDto {
   id: number;
