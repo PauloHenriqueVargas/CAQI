@@ -65,6 +65,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/compliance/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH,  "/api/v1/compliance/notificacoes/**").hasRole("GESTOR")
                         .requestMatchers(HttpMethod.POST,   "/api/v1/compliance/avaliar").hasRole("GESTOR")
+                        // Publicação LRF art. 48-A — disparo manual exige ADMIN
+                        .requestMatchers(HttpMethod.POST,   "/api/v1/compliance/publicacoes/executar").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET,    "/api/v1/compliance/**").hasRole("LEITOR")
 
                         .anyRequest().authenticated()

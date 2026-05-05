@@ -76,3 +76,15 @@ caqi:
       # service account — leitor é suficiente
       username: ${CAQI_LEITOR_USERNAME:leitor}
       password: ${CAQI_LEITOR_PASSWORD:trocar_em_prod}
+    engine:
+      base-url: ${CAQ_ENGINE_URL:http://localhost:8081}
+  # Publicação automática LRF art. 48-A — snapshots periódicos do conteúdo
+  # público (Fundeb, SIOPE, cálculos CAQ, contratos, despesas) com hash
+  # SHA-256. Idempotente: hash idêntico ao último não gera nova entrada.
+  publicacao:
+    # Cron Spring (sec min hour day month dow). Default: a cada 6h
+    # (LRF art. 48-A exige até 24h após executado; folga de 4×).
+    cron: ${CAQI_PUBLICACAO_CRON:0 0 */6 * * *}
+    enabled: ${CAQI_PUBLICACAO_ENABLED:true}
+    # Ano-base alvo: corrente. Para republicar histórico, chamar /executar?ano=YYYY.
+    base-url-publica: ${CAQI_BASE_URL_PUBLICA:http://localhost:3000}

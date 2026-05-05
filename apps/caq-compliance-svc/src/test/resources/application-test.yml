@@ -9,6 +9,10 @@ caqi:
       base-url: http://localhost-test
       username: leitor_test
       password: leitor_test_password
+    engine:
+      base-url: http://localhost-test
+  publicacao:
+    enabled: false  # scheduler off em tests
 
 spring:
   rabbitmq:

@@ -45,6 +45,7 @@ test.describe('Portal público /transparencia (sem auth)', () => {
     expect(body).toContain('/transparencia/contratos');
     expect(body).toContain('/transparencia/despesas');
     expect(body).toContain('/transparencia/notificacoes');
+    expect(body).toContain('/transparencia/publicacoes');
   });
 
   test('Subpáginas renderizam shell + banner "sem dados" quando BFF retorna null', async ({ page }) => {
@@ -54,6 +55,7 @@ test.describe('Portal público /transparencia (sem auth)', () => {
       '/transparencia/despesas',
       '/transparencia/calculos',
       '/transparencia/notificacoes',
+      '/transparencia/publicacoes',
     ]) {
       await page.goto(path);
       await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
@@ -95,5 +97,17 @@ test.describe('Portal público /transparencia (sem auth)', () => {
   test('WCAG 2.1 AA — /transparencia/notificacoes (lista vazia)', async ({ page }, testInfo) => {
     await page.goto('/transparencia/notificacoes');
     await runAxe(page, testInfo);
+  });
+
+  test('WCAG 2.1 AA — /transparencia/publicacoes (LRF 48-A trail vazio)', async ({ page }, testInfo) => {
+    await page.goto('/transparencia/publicacoes');
+    await runAxe(page, testInfo);
+  });
+
+  test('Filtros por tipo em /publicacoes preservam aria-current=page', async ({ page }) => {
+    await page.goto('/transparencia/publicacoes?tipo=fundeb_execucao');
+    const filterNav = page.getByRole('navigation', { name: /Filtrar por tipo/i });
+    const link = filterNav.getByRole('link', { name: 'Fundeb / MDE / VAAT', exact: true });
+    await expect(link).toHaveAttribute('aria-current', 'page');
   });
 });

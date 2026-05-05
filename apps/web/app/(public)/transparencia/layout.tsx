@@ -8,6 +8,7 @@ const NAV = [
   { href: '/transparencia/contratos',      label: 'Contratos' },
   { href: '/transparencia/despesas',       label: 'Despesas' },
   { href: '/transparencia/notificacoes',   label: 'Notificações' },
+  { href: '/transparencia/publicacoes',    label: 'Publicações' },
 ] as const;
 
 export const metadata: Metadata = {

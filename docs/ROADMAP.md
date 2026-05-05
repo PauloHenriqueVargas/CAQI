@@ -242,9 +242,37 @@ Sprint 6.B (concluída) — Portal público `/transparencia` em Next.js:
   - SEO: title e description corretos em `/fundeb`
   - 4 axe-core scans (landing + fundeb + contratos + notificacoes) — WCAG 2.1 AA
 
-Sprint 6.C (próxima):
-- [ ] CronJob/scheduled task de publicação automática (LRF art. 48-A — até 24h após executado): grava em `publicacao_portal` (já existe na DDL V0001) com hash do conteúdo e timestamp
-- [ ] Repositório documental: anexos contratuais em MinIO/S3 (PJ não-confidencial; metadados públicos via /api/public/transparencia/anexos)
+Sprint 6.C (concluída — parcial 1) — Publicação automática LRF art. 48-A:
+- [x] **V0010** estende `publicacao_portal` (V0001) com `referencia VARCHAR(20)` (ano ou ano+mês), `tamanho_bytes BIGINT`, `snapshot JSONB`; **partial unique index** `(tipo, referencia, conteudo_hash) WHERE NOT NULL` (idempotência); índices `(tipo, data_publicacao DESC)` e `(referencia)` para listagens públicas
+- [x] **`PublicSnapshotClient`** — cliente HTTP sem auth para `/api/public/transparencia/**` dos serviços engine + financeiro; captura JSON literal (`JsonNode`) — exatamente o que o cidadão vê
+- [x] **`PublicacaoService`** transacional, 5 snapshot providers:
+  - `fundeb_execucao` (referencia=YYYY) — `/fundeb-execucao?ano=N`
+  - `siope_quadro` (referencia=YYYY) — `/siope-quadro?ano=N`
+  - `calculos_caq` (referencia=`-`) — `/calculos`
+  - `contratos` (referencia=`-`) — `/contratos`
+  - `despesas` (referencia=YYYY) — `/despesas?ano=N`
+  - **JSON canônico** via `MapperFeature.SORT_PROPERTIES_ALPHABETICALLY` + `ORDER_MAP_ENTRIES_BY_KEYS` → `MessageDigest SHA-256` → hex 64-char
+  - **Dedup**: compara hash novo com último publicado para mesmo `(tipo, referencia)` — idêntico = SKIPPED, diferente = INSERT
+  - **Audit chain**: cada publicação chama `AuditChainService.registrar("publicacao_portal", id, "publicar:tipo")` + uma entrada de lote ao final
+  - Falhas isoladas por snapshot não interrompem os demais (5 tentativas independentes)
+- [x] **`PublicacaoScheduler`** — `@Scheduled(cron = "${caqi.publicacao.cron:0 0 */6 * * *}", zone = "America/Sao_Paulo")`; `@ConditionalOnProperty caqi.publicacao.enabled=true` (default true, off em tests)
+- [x] **Application class** ganha `@EnableScheduling`
+- [x] **Endpoints autenticados** (`PublicacaoController` em `/api/v1/compliance/publicacoes`):
+  - `POST /executar?ano=N` (ADMIN) — disparo manual
+  - `GET /` (LEITOR) — lista com filtros opcionais `?tipo=` e `?referencia=`
+  - `GET /{id}` (LEITOR) — detalhe com snapshot JSON arquivado
+- [x] **Endpoints públicos** (extensão de `PublicTransparenciaController`):
+  - `GET /api/public/transparencia/publicacoes?tipo=` — trilha pública
+  - `GET /api/public/transparencia/publicacoes/{id}` — detalhe + snapshot (cache 5 min)
+- [x] **SecurityConfig**: + RBAC `POST /publicacoes/executar` ADMIN
+- [x] **PublicacaoServiceTest** (7 cenários Mockito): primeira execução publica todos os 5 + 6 entradas chain (5 + 1 lote); hash idêntico = skip + nada persistido; backend null = falha isolada (2 publicadas + 3 falhas); cliente lança exceção = falha isolada não interrompe; campos persistidos corretos (tipo+ref+hash+tamanho+url+snapshot); `ano=null` usa `Year.now()`; **hash canônico estável** sob reordenação de chaves do JSON
+- [x] **Frontend** `/transparencia/publicacoes?tipo=` (Server Component) — tabela cronológica com hash truncado + abbr title (full hash) + tamanho em bytes formatado pt-BR + filtros por tipo com `aria-current=page` + seção "Como verificar a integridade" (passo-a-passo openssl dgst); link no nav do layout público; URL adicionada ao `sitemap.xml`
+- [x] **E2E** atualizado: subpáginas inclui `/publicacoes`, sitemap aceita `/transparencia/publicacoes`, novo teste WCAG axe-core + teste de filtro `aria-current` (escopado ao `nav[aria-label="Filtrar por tipo"]` para evitar colisão com `Fundeb / MDE` do layout)
+
+Sprint 6.C (defer):
+- [ ] **Repositório documental** — anexos contratuais em MinIO/S3 (CNPJ PJ não-confidencial); metadados públicos via `GET /api/public/transparencia/anexos`; payload estruturado em `contrato.anexos JSONB` (V0011)
+- [ ] **K8s CronJob redundante** — `helm/templates/cronjob-publicacao.yaml` que faz `curl POST /publicacoes/executar` com Basic Auth do admin (defesa em profundidade caso `@Scheduled` da JVM caia)
+- [ ] **Verificação automatizada de integridade** — endpoint `GET /publicacoes/{id}/verificar` que recalcula o hash do `snapshot` armazenado e compara com `conteudo_hash`
 
 ## Fase 7 — Auditoria + Simulador
 

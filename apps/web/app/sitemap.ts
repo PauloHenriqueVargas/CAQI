@@ -16,5 +16,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${BASE_URL}/transparencia/contratos`,      lastModified: now, changeFrequency: 'weekly',  priority: 0.8 },
     { url: `${BASE_URL}/transparencia/despesas`,       lastModified: now, changeFrequency: 'daily',   priority: 0.8 },
     { url: `${BASE_URL}/transparencia/notificacoes`,   lastModified: now, changeFrequency: 'daily',   priority: 0.7 },
+    { url: `${BASE_URL}/transparencia/publicacoes`,    lastModified: now, changeFrequency: 'daily',   priority: 0.6 },
   ];
 }

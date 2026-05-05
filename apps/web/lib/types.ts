@@ -204,6 +204,18 @@ export interface FonteRecursoDto {
   descricao: string | null;
 }
 
+/** Trilha de publicações LRF art. 48-A. */
+export interface PublicacaoDto {
+  id: number;
+  tipo: string;          // fundeb_execucao | siope_quadro | calculos_caq | contratos | despesas
+  referencia: string;    // ano (YYYY) ou "-"
+  conteudoHash: string;  // SHA-256 hex
+  tamanhoBytes: number;
+  urlPublica: string | null;
+  dataPublicacao: string;
+  snapshot: unknown | null; // só vem no detalhe
+}
+
 /** Helpers de formatação BR */
 export const fmt = {
   money: (v: Money | string | number | null | undefined): string => {
