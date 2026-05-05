@@ -190,10 +190,40 @@ Sprint 5.B (defer):
 - [ ] Importer para DOCENTES_*.csv → `pessoa_servidor`
 - [ ] Sincronização CAQ: trigger evento `caqi.censo.importado.{municipioId}` consumido pelo engine para recalcular CAQ das escolas afetadas (decisão pendente: usar contagens Censo como fallback quando `matricula` operacional não estiver populada?)
 
-Sprint 5.C (próxima — defer):
-- [ ] Analytics layer dbt — modelos staging/intermediate/marts em `analytics/`
-- [ ] Marts: caq_aluno_ano, fundeb_execucao_mensal, transparencia_lai
-- [ ] Orquestração via Dagster ou cron simples
+Sprint 5.C (concluída) — Camada analítica dbt em `analytics/`:
+- [x] **Skeleton dbt-core 1.8 + dbt-postgres** — `dbt_project.yml`, `profiles.example.yml`, `packages.yml` (dbt_utils 1.3), `requirements.txt` (versões pinadas), `.gitignore`, `README.md` com setup local e produção
+- [x] Convenção de schemas: `analytics_staging` + `analytics_intermediate` (views) + `analytics_marts` (tables — BI consome aqui); `+persist_docs` para descrições gravadas no Postgres
+- [x] **Sources** declarados em `models/staging/_sources.yml` para 16 tabelas operacionais (V0001..V0010): escola, etapa, parametro_etapa, insumo, custo_insumo, indice_preco, calculo_caq, calculo_caq_item, receita, despesa, fonte_recurso, fornecedor, contrato, medicao_contrato, notificacao, log_auditoria, publicacao_portal, censo_importacao, censo_matricula_resumo
+- [x] **13 staging models** (`stg_*.sql`) — 1:1 com tabelas operacionais com renames + casts + flags derivadas:
+  - `stg_escola/etapa/insumo/custo_insumo` (catálogo)
+  - `stg_calculo_caq` renomeia `gap_execucao` → `gap_adequado` (alinha vocabulário)
+  - `stg_calculo_caq_item` (memória item-a-item, perfil minimo|adequado)
+  - `stg_receita` + `stg_despesa` extraem ano/mes/competencia_date da CHAR(6) YYYYMM; despesa ganha `is_pessoal` (3.1.x) e `is_capital` (4.x)
+  - `stg_fonte_recurso/fornecedor/contrato/medicao_contrato` (compras)
+  - `stg_notificacao` calcula `dias_para_resolver`
+  - `stg_publicacao_portal` (LRF 48-A trail)
+  - `stg_log_auditoria` (chain SHA-256)
+  - `stg_censo_matricula_resumo` (microdados INEP agregados)
+- [x] **`_staging.yml`** com testes em todos os PKs (unique + not_null), FKs (relationships), valores de domínio (accepted_values para tipo_aplicacao, perfil, severidade, status, modalidade Lei 14.133), ranges (mes 1-12)
+- [x] **3 intermediate models**:
+  - `int_receitas_anuais_por_origem` — soma por (ano, origem) + flags eh_mde_base/eh_fundeb_base/eh_vaat
+  - `int_despesas_classificadas` — JOIN com fonte_recurso + flags classe_pessoal_fundeb/classe_capital_vaat/eh_mde
+  - `int_calculo_perfil_pivoted` — pivota itens por perfil (mínimo vs adequado) lado-a-lado
+- [x] **3 mart models** (table materialized + indexes):
+  - **`caq_aluno_ano`** — grain (escola, etapa, ano); 1 linha por calculo; campos desnormalizados (escola_nome, etapa_codigo) + métricas derivadas (pct_gap, pct_pessoal_no_caqi, num_itens_minimo/adequado)
+  - **`fundeb_execucao_mensal`** — grain (ano, mes); calendário 12×anos com window function `sum() over (partition by ano order by mes rows unbounded preceding to current)` para acumulado; pcts MDE/Fundeb70/VAAT15 + booleans cumpre_*; permite ver trajetória mensal, não só fim de ano
+  - **`transparencia_lai`** — grain (ano); KPIs públicos consolidados: qtd cálculos, contratos, valor contratado, receita/despesa total, qtd notificações abertas/críticas/resolvidas + dias médio resolução, qtd publicações LRF 48-A + hash da última
+- [x] **`_marts.yml`** com testes nos PKs + dbt_utils.unique_combination_of_columns ((ano, escola_id, etapa_codigo) e (ano, mes)) + accepted_values (etapa CRECHE..EJA) + dbt_utils.expression_is_true (gap_adequado >= 0) + dbt_utils.accepted_range (ano 2020-2100, mes 1-12)
+- [x] **CI job `dbt`** em `.github/workflows/ci.yml` com Postgres 16 service container, aplica V0001..V0011 via psql, instala dbt + dbt_utils, roda `dbt parse` + `dbt compile` + `dbt run` (tests não rodam — sem seed em CI; reservados para staging real)
+- [x] **V0011 (cleanup)** — `ALTER COLUMN log_auditoria.acao TYPE VARCHAR(60)`; descoberta pela camada analítica que valores como `"publicar:fundeb_execucao"` (24 chars) e `"executar_lote_manual:admin"` (>10 chars) da Fase 6.C estouravam o VARCHAR(10) original. ALTER não dispara o trigger de proteção da V0006 (cobre só DML)
+- [x] **Helm CronJob** `templates/cronjob-dbt-run.yaml` — schedule default `0 */6 * * *`, image custom (`ghcr.io/caqi/dbt-runner` com analytics/ embarcado); RBAC mínimo (read-only role `caqi_analytics`, separado do `caqi` do app); recursos limitados (1 CPU / 1 GB); volumes `tmp/logs/target` em `emptyDir`; values.yaml ganha seção `dbt:` com toggles e secret de senha
+
+Sprint 5.C (defer):
+- [ ] **Orquestração avançada** com Dagster (lineage UI + retries automáticos + alertas) — atualmente cronjob simples basta para MVP
+- [ ] **Réplica analítica read-only** (logical replication ou snapshot diário) para isolar carga OLTP do dbt em produção — atualmente roda no mesmo banco
+- [ ] **Marts adicionais** sob demanda do controle social: `contratos_fornecedor` (concentração de fornecedor), `medicoes_vs_contratos` (saldo executado), `escolas_com_gap_alto` (top-N escolas por pct_gap)
+- [ ] **Snapshots dbt** para SCD-2 dos parâmetros de etapa e custos de insumo (rastrear quando subiu o piso salarial, quando reduziu alunos/turma)
+- [ ] **dbt seeds CSV estáticos** — códigos IBGE de municípios, dicionário de naturezas PCASP, dicionário de etapas INEP
 
 ## Fase 6 — Transparência/LAI
 

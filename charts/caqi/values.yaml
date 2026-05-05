@@ -135,6 +135,26 @@ backup:
     requests: { cpu: 100m, memory: 256Mi }
     limits:   { cpu: 500m, memory: 512Mi }
 
+# === Analytics dbt (CronJob: dbt run a cada 6h) ===
+dbt:
+  enabled: false                    # ligar quando o dbt-runner image estiver publicada
+  schedule: "0 */6 * * *"           # a cada 6 horas
+  target: "prod"
+  user: "caqi_analytics"            # role read-only de analytics, separado do app
+  existingSecret: "caqi-dbt"        # k8s Secret com chave 'password'
+  existingSecretKey: "password"
+  image:
+    # Imagem custom: ghcr.io/seu-org/caqi-dbt-runner contendo:
+    # - dbt-core 1.8 + dbt-postgres
+    # - O conteúdo de analytics/ copiado para /opt/analytics
+    # - profiles.yml resolvendo via env vars
+    repository: ghcr.io/caqi/dbt-runner
+    tag: "0.1.0"
+    pullPolicy: IfNotPresent
+  resources:
+    requests: { cpu: 200m, memory: 512Mi }
+    limits:   { cpu: 1000m, memory: 1024Mi }
+
 # === Ingress ===
 ingress:
   enabled: true

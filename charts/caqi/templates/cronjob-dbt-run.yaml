@@ -1,0 +1,87 @@
+{{- if .Values.dbt.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "caqi.fullname" . }}-dbt-run
+  labels:
+    {{- include "caqi.labels" . | nindent 4 }}
+    app.kubernetes.io/component: analytics
+spec:
+  schedule: {{ .Values.dbt.schedule | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 7
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            {{- include "caqi.selectorLabels" . | nindent 12 }}
+            app.kubernetes.io/component: analytics
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: {{ include "caqi.fullname" . }}
+          securityContext:
+            {{- toYaml .Values.podSecurityContext | nindent 12 }}
+          containers:
+            - name: dbt-runner
+              image: "{{ .Values.dbt.image.repository }}:{{ .Values.dbt.image.tag }}"
+              imagePullPolicy: {{ .Values.dbt.image.pullPolicy | default "IfNotPresent" }}
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                runAsUser: 1000
+                capabilities:
+                  drop: ["ALL"]
+              env:
+                - name: CAQI_DBT_HOST
+                  value: {{ .Values.postgresql.external.host | quote }}
+                - name: CAQI_DBT_PORT
+                  value: {{ .Values.postgresql.external.port | quote }}
+                - name: CAQI_DBT_DB
+                  value: {{ .Values.postgresql.external.database | quote }}
+                - name: CAQI_DBT_USER
+                  value: {{ .Values.dbt.user | quote }}
+                - name: CAQI_DBT_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.dbt.existingSecret }}
+                      key: {{ .Values.dbt.existingSecretKey }}
+                - name: CAQI_MUNICIPIO_ID
+                  value: {{ .Values.tenant.municipioId | quote }}
+                - name: DBT_TARGET
+                  value: {{ .Values.dbt.target | quote }}
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -euo pipefail
+                  cd /opt/analytics
+                  echo "→ dbt deps"
+                  dbt deps
+                  echo "→ dbt run --target ${DBT_TARGET}"
+                  dbt run --target ${DBT_TARGET}
+                  echo "→ dbt test --target ${DBT_TARGET}"
+                  dbt test --target ${DBT_TARGET} || true   # tests não bloqueiam (alertas)
+                  echo "→ Concluído"
+              volumeMounts:
+                - name: dbt-tmp
+                  mountPath: /tmp
+                - name: dbt-logs
+                  mountPath: /opt/analytics/logs
+                - name: dbt-target
+                  mountPath: /opt/analytics/target
+              resources:
+                {{- toYaml .Values.dbt.resources | nindent 16 }}
+          volumes:
+            - name: dbt-tmp
+              emptyDir:
+                sizeLimit: 1Gi
+            - name: dbt-logs
+              emptyDir:
+                sizeLimit: 500Mi
+            - name: dbt-target
+              emptyDir:
+                sizeLimit: 1Gi
+{{- end }}

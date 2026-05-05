@@ -1,0 +1,15 @@
+# dbt artifacts
+target/
+dbt_packages/
+logs/
+.user.yml
+
+# Profiles com credenciais reais (use ~/.dbt/profiles.yml ou env vars)
+profiles.yml
+
+# Python virtualenv local
+.venv/
+venv/
+
+# Editor
+.dbt/

@@ -175,6 +175,82 @@ jobs:
         run: helm template caqi-municipio-exemplo charts/caqi -f charts/caqi/values-municipio-exemplo.yaml --debug
 
   # ──────────────────────────────────────────────────────────────────────
+  dbt:
+    name: dbt — parse + compile (Postgres)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: caqi
+          POSTGRES_USER: caqi
+          POSTGRES_PASSWORD: caqi_test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U caqi -d caqi"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    defaults:
+      run:
+        working-directory: analytics
+    env:
+      CAQI_DBT_HOST: localhost
+      CAQI_DBT_PORT: "5432"
+      CAQI_DBT_USER: caqi
+      CAQI_DBT_PASSWORD: caqi_test_password
+      CAQI_DBT_DB: caqi
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: analytics/requirements.txt
+
+      - name: Install dbt
+        run: pip install -r requirements.txt
+
+      - name: Apply Flyway migrations (gives dbt sources to validate against)
+        run: |
+          # Migrações ficam em apps/caq-engine-svc/src/main/resources/db/migration
+          # Aqui usamos psql para criar tabelas vazias suficientes para dbt compile.
+          # Em prod, dbt rodaria contra um schema já populado pelos serviços Spring.
+          PGPASSWORD=caqi_test_password psql -h localhost -U caqi -d caqi \
+            -f ../apps/caq-engine-svc/src/main/resources/db/migration/V0001__initial_schema.sql
+
+      - name: Apply later migrations (V0002+)
+        run: |
+          # Aplica todas as migrações em ordem alfanumérica, exceto V0001 (já aplicada acima).
+          for f in $(ls ../apps/caq-engine-svc/src/main/resources/db/migration/V*.sql | sort); do
+            base=$(basename "$f")
+            case "$base" in V0001*) continue;; esac
+            echo "Applying $base"
+            PGPASSWORD=caqi_test_password psql -h localhost -U caqi -d caqi -f "$f"
+          done
+
+      - name: Generate profiles.yml from template
+        run: |
+          mkdir -p ~/.dbt
+          cp profiles.example.yml ~/.dbt/profiles.yml
+
+      - name: dbt deps
+        run: dbt deps
+
+      - name: dbt parse (validate sintaxe + refs)
+        run: dbt parse
+
+      - name: dbt compile (valida SQL contra schema real)
+        run: dbt compile --target dev
+
+      - name: dbt run (sem tests, só valida que SQL roda)
+        run: dbt run --target dev --exclude-resource-type test
+
+  # ──────────────────────────────────────────────────────────────────────
   openapi:
     name: OpenAPI — validate
     runs-on: ubuntu-latest

@@ -1,0 +1,35 @@
+# Modelo do ~/.dbt/profiles.yml para o projeto caqi_analytics.
+# Copie para ~/.dbt/profiles.yml e ajuste conforme o ambiente.
+#
+# IMPORTANTE: NÃO commit este arquivo com valores reais. Use variáveis de
+# ambiente (env_var) ou ~/.dbt/profiles.yml fora do repo.
+
+caqi_analytics:
+  target: dev
+  outputs:
+
+    # Dev local — Postgres do docker-compose
+    dev:
+      type: postgres
+      host: "{{ env_var('CAQI_DBT_HOST', 'localhost') }}"
+      port: "{{ env_var('CAQI_DBT_PORT', '5432') | int }}"
+      user: "{{ env_var('CAQI_DBT_USER', 'caqi') }}"
+      password: "{{ env_var('CAQI_DBT_PASSWORD', 'caqi_dev_password') }}"
+      dbname: "{{ env_var('CAQI_DBT_DB', 'caqi') }}"
+      schema: analytics      # base; modelos sobrescrevem via dbt_project.yml
+      threads: 4
+      sslmode: prefer
+      keepalives_idle: 0
+
+    # Produção — réplica analítica (read-only do principal ou warehouse)
+    prod:
+      type: postgres
+      host: "{{ env_var('CAQI_DBT_HOST') }}"
+      port: "{{ env_var('CAQI_DBT_PORT', '5432') | int }}"
+      user: "{{ env_var('CAQI_DBT_USER') }}"
+      password: "{{ env_var('CAQI_DBT_PASSWORD') }}"
+      dbname: "{{ env_var('CAQI_DBT_DB', 'caqi') }}"
+      schema: analytics
+      threads: 8
+      sslmode: require
+      keepalives_idle: 30

@@ -1,0 +1,210 @@
+version: 2
+
+models:
+  - name: stg_escola
+    description: Unidade escolar municipal — uma linha por escola.
+    columns:
+      - name: escola_id
+        description: BIGSERIAL PK.
+        data_tests: [unique, not_null]
+      - name: escola_nome
+        data_tests: [not_null]
+      - name: escola_inep
+        description: Código INEP (8 dígitos) quando disponível.
+      - name: situacao
+        data_tests:
+          - accepted_values:
+              values: ['ativa', 'inativa']
+
+  - name: stg_etapa
+    columns:
+      - name: etapa_id
+        data_tests: [unique, not_null]
+      - name: etapa_codigo
+        data_tests: [unique, not_null]
+
+  - name: stg_insumo
+    columns:
+      - name: insumo_id
+        data_tests: [unique, not_null]
+      - name: insumo_codigo
+        data_tests: [unique, not_null]
+      - name: tipo_aplicacao
+        data_tests:
+          - accepted_values:
+              values: ['por_aluno', 'por_turma', 'por_escola']
+
+  - name: stg_custo_insumo
+    columns:
+      - name: custo_id
+        data_tests: [unique, not_null]
+      - name: insumo_id
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_insumo')
+              field: insumo_id
+      - name: perfil
+        data_tests:
+          - accepted_values:
+              values: ['minimo', 'adequado']
+      - name: custo_unitario
+        data_tests: [not_null]
+
+  - name: stg_calculo_caq
+    description: >
+      Resultado consolidado por (escola, etapa, ano). UNIQUE natural em V0001
+      é (etapa_id, escola_id, ano).
+    columns:
+      - name: calculo_id
+        data_tests: [unique, not_null]
+      - name: escola_id
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_escola')
+              field: escola_id
+      - name: etapa_id
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_etapa')
+              field: etapa_id
+      - name: ano
+        data_tests: [not_null]
+      - name: valor_caqi_aluno_ano
+        description: CAQ Inicial — perfil mínimo. Não pode ser negativo.
+      - name: valor_caq_aluno_ano
+        description: CAQ Adequado — perfil pleno.
+
+  - name: stg_calculo_caq_item
+    columns:
+      - name: item_id
+        data_tests: [unique, not_null]
+      - name: calculo_id
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_calculo_caq')
+              field: calculo_id
+      - name: perfil
+        data_tests:
+          - accepted_values:
+              values: ['minimo', 'adequado']
+      - name: tipo_aplicacao
+        data_tests:
+          - accepted_values:
+              values: ['por_aluno', 'por_turma', 'por_escola']
+
+  - name: stg_receita
+    columns:
+      - name: receita_id
+        data_tests: [unique, not_null]
+      - name: competencia
+        description: CHAR(6) YYYYMM.
+        data_tests: [not_null]
+      - name: ano
+        data_tests: [not_null]
+      - name: mes
+        data_tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 1
+              max_value: 12
+
+  - name: stg_despesa
+    columns:
+      - name: despesa_id
+        data_tests: [unique, not_null]
+      - name: competencia
+        data_tests: [not_null]
+      - name: natureza
+        data_tests: [not_null]
+      - name: is_pessoal
+        data_tests: [not_null]
+      - name: is_capital
+        data_tests: [not_null]
+
+  - name: stg_fonte_recurso
+    columns:
+      - name: fonte_recurso_id
+        data_tests: [unique, not_null]
+      - name: tipo
+        data_tests:
+          - accepted_values:
+              values: ['Propria', 'VAAF', 'VAAT', 'VAAR', 'Outras']
+
+  - name: stg_fornecedor
+    columns:
+      - name: fornecedor_id
+        data_tests: [unique, not_null]
+      - name: cnpj
+        data_tests: [unique]
+
+  - name: stg_contrato
+    columns:
+      - name: contrato_id
+        data_tests: [unique, not_null]
+      - name: fornecedor_id
+        data_tests:
+          - relationships:
+              to: ref('stg_fornecedor')
+              field: fornecedor_id
+      - name: modalidade
+        data_tests:
+          - accepted_values:
+              values:
+                - PREGAO_ELETRONICO
+                - CONCORRENCIA
+                - DISPENSA
+                - INEXIGIBILIDADE
+                - DIALOGO_COMPETITIVO
+                - CONCURSO
+                - LEILAO
+
+  - name: stg_medicao_contrato
+    columns:
+      - name: medicao_id
+        data_tests: [unique, not_null]
+      - name: contrato_id
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_contrato')
+              field: contrato_id
+
+  - name: stg_notificacao
+    columns:
+      - name: notificacao_id
+        data_tests: [unique, not_null]
+      - name: severidade
+        data_tests:
+          - accepted_values:
+              values: ['info', 'warn', 'alta', 'critica']
+      - name: status
+        data_tests:
+          - accepted_values:
+              values: ['aberta', 'em_analise', 'resolvida', 'ignorada']
+
+  - name: stg_publicacao_portal
+    columns:
+      - name: publicacao_id
+        data_tests: [unique, not_null]
+      - name: tipo
+        data_tests: [not_null]
+      - name: conteudo_hash
+        description: SHA-256 hex do JSON canônico (Fase 6.C).
+
+  - name: stg_log_auditoria
+    columns:
+      - name: log_id
+        data_tests: [unique, not_null]
+
+  - name: stg_censo_matricula_resumo
+    columns:
+      - name: resumo_id
+        data_tests: [unique, not_null]
+      - name: ano_censo
+        data_tests: [not_null]
+      - name: etapa_codigo
+        data_tests: [not_null]

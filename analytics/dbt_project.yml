@@ -1,0 +1,47 @@
+name: caqi_analytics
+version: 0.1.0
+profile: caqi_analytics
+config-version: 2
+
+# Disposições de pasta
+model-paths:    ["models"]
+analysis-paths: ["analyses"]
+test-paths:     ["tests"]
+seed-paths:     ["seeds"]
+macro-paths:    ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+# Convenções de schema:
+#  - sources estão em `public` (todas as tabelas operacionais V0001..V0010)
+#  - staging materializa como views em `analytics_staging`
+#  - intermediate materializa como views em `analytics_intermediate`
+#  - marts materializa como tables em `analytics_marts` (BI consome aqui)
+#
+# Em ambiente single-database (postgres do docker-compose), os schemas são
+# criados pelo dbt na execução. Em produção podem viver em outro database
+# (réplica analítica) ou no warehouse final (Redshift, BQ, Snowflake).
+models:
+  caqi_analytics:
+    +persist_docs:
+      relation: true
+      columns: true
+    staging:
+      +materialized: view
+      +schema: staging
+    intermediate:
+      +materialized: view
+      +schema: intermediate
+    marts:
+      +materialized: table
+      +schema: marts
+
+vars:
+  # Tenant: filtragem cross-table por município. Em ambientes single-tenant
+  # (1 instância CAQi por município) o valor é meramente informativo.
+  caqi_tenant_municipio_id: "{{ env_var('CAQI_MUNICIPIO_ID', '000000') }}"
+  # Ano-base de análise (default: ano corrente, sobrescrevível em CI/scheduler)
+  caqi_ano_atual: "{{ env_var('CAQI_ANO_ATUAL', modules.datetime.datetime.now().strftime('%Y')) }}"

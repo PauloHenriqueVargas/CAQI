@@ -1,0 +1,90 @@
+version: 2
+
+models:
+  - name: caq_aluno_ano
+    description: >
+      Mart final dos cálculos CAQ/CAQi por (escola, etapa, ano). BI consume aqui.
+      Inclui escola_nome desnormalizado, gap CAQi→CAQ em valor e percentual,
+      e indicadores derivados (share do pessoal no CAQi).
+    columns:
+      - name: calculo_id
+        description: BIGSERIAL PK do cálculo (cada execução substitui a anterior do mesmo trio).
+        data_tests: [unique, not_null]
+      - name: ano
+        data_tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 2020
+              max_value: 2100
+      - name: escola_id
+        data_tests: [not_null]
+      - name: escola_nome
+        data_tests: [not_null]
+      - name: etapa_codigo
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ['CRECHE', 'PRE', 'EF1', 'EF2', 'EM', 'EJA']
+      - name: valor_caqi_aluno_ano
+        description: CAQ Inicial (mínimo) por aluno-ano.
+      - name: valor_caq_aluno_ano
+        description: CAQ Adequado (pleno) por aluno-ano.
+      - name: gap_adequado
+        description: Diferença CAQ_aluno_ano − CAQi_aluno_ano (não-negativo).
+        data_tests:
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+      - name: pct_gap
+        description: Gap como % do CAQi (gap / valor_caqi × 100).
+      - name: pct_pessoal_no_caqi
+        description: Share da rubrica de pessoal (PES%) no CAQi mínimo.
+
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [ano, escola_id, etapa_codigo]
+
+  - name: fundeb_execucao_mensal
+    description: >
+      Execução Fundeb/MDE/VAAT mês a mês com totais acumulados no ano. Permite
+      ao CACS-Fundeb/CME ver a trajetória — não apenas o número final.
+      Meses sem lançamento aparecem com zeros (calendário 12×anos).
+    columns:
+      - name: ano
+        data_tests: [not_null]
+      - name: mes
+        data_tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 1
+              max_value: 12
+      - name: pct_mde_acum
+        description: ≥25% (CF/88 art. 212) ⇒ cumpre_mde=true.
+      - name: pct_fundeb_pessoal_acum
+        description: ≥70% (Lei 14.113/2020) ⇒ cumpre_fundeb_pessoal=true.
+      - name: pct_vaat_capital_acum
+        description: ≥15% (Lei 14.113/2020) ⇒ cumpre_vaat_capital=true.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [ano, mes]
+
+  - name: transparencia_lai
+    description: >
+      KPIs do portal público de transparência (LAI/LRF) por ano. Tabela
+      consolidada que responde: "o que é público neste exercício?" — qtd
+      cálculos, contratos, valor contratado, notificações abertas/críticas,
+      qtd publicações LRF 48-A, hash da última publicação.
+    columns:
+      - name: ano
+        data_tests: [unique, not_null]
+      - name: qtd_calculos_publicados
+        data_tests: [not_null]
+      - name: qtd_contratos
+        data_tests: [not_null]
+      - name: qtd_notif_abertas
+        data_tests: [not_null]
+      - name: qtd_notif_criticas
+        description: Subset de qtd_notif_abertas com severidade=critica.
+      - name: qtd_publicacoes_lrf48a
+        data_tests: [not_null]
+      - name: hash_ultima_publicacao
+        description: SHA-256 hex da publicação mais recente do ano.

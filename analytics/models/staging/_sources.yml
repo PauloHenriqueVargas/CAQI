@@ -1,0 +1,57 @@
+version: 2
+
+sources:
+  - name: caqi
+    description: >
+      Tabelas operacionais do Sistema CAQ/CAQi, schema `public`, escritas
+      pelos 4 microserviços Spring. Migrações: V0001..V0010 + seeds V9001..V9003.
+    database: "{{ env_var('CAQI_DBT_DB', 'caqi') }}"
+    schema: public
+    tables:
+      # ── Domínio escolar ──
+      - name: escola
+        description: Unidade escolar municipal (rede). PK=escola_id, INEP via inep_id.
+      - name: etapa
+        description: Etapas de ensino (CRECHE, PRE, EF1, EF2, EM, EJA). PK=etapa_id, código natural=codigo.
+      - name: parametro_etapa
+        description: Parâmetros vigentes por etapa (alunos/turma, jornada, coef rural).
+
+      # ── Domínio insumos / cálculo ──
+      - name: insumo
+        description: Catálogo de insumos do CAQ. PK=insumo_id, natural key=codigo.
+      - name: custo_insumo
+        description: Histórico de custos por (insumo, perfil, vigência).
+      - name: indice_preco
+        description: Índices SINAPI/IPCA mensais para reajuste de custos.
+      - name: calculo_caq
+        description: Resultado consolidado por (escola, etapa, ano). PK=calculo_id, natural unique=(etapa_id, escola_id, ano).
+      - name: calculo_caq_item
+        description: Memória item-a-item de cada cálculo, com perfil minimo|adequado.
+
+      # ── Domínio financeiro ──
+      - name: receita
+        description: Receitas por competência (YYYYMM) e origem (impostos/transferencias/Fundeb_*).
+      - name: despesa
+        description: Despesas por competência, natureza PCASP, fonte de recurso.
+      - name: fonte_recurso
+        description: Fontes de recurso (Propria/VAAF/VAAT/VAAR/Outras).
+      - name: fornecedor
+        description: Fornecedores cadastrados. CNPJ único; flag optante Simples Nacional.
+      - name: contrato
+        description: Contratos administrativos Lei 14.133/2021.
+      - name: medicao_contrato
+        description: Medições mensais por contrato, com nota fiscal.
+
+      # ── Domínio compliance ──
+      - name: notificacao
+        description: Notificações automáticas de violação legal (MDE/Fundeb/VAAT). Severidade + base legal.
+      - name: log_auditoria
+        description: Cadeia SHA-256 (Merkle) de eventos auditáveis. Append-only (V0006).
+      - name: publicacao_portal
+        description: Trilha de publicações automáticas LRF art. 48-A (V0010), com snapshot JSONB.
+
+      # ── Domínio Censo ──
+      - name: censo_importacao
+        description: Auditoria de importações de microdados Censo Escolar/INEP (V0009).
+      - name: censo_matricula_resumo
+        description: Agregação de matrículas por (escola, etapa, ano) extraída do Censo INEP.
